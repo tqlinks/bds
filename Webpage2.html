@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Web Quản Lý & Tìm Kiếm Bất Động Sản Offline</title>
+    <style>
+        /* ======================================================= */
+        /* CSS CHO GIAO DIỆN */
+        /* ======================================================= */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+        .column {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .column-left {
+            flex: 1.5;
+        }
+        .column-right {
+            flex: 2;
+        }
+        h2 {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        /* Style cho khu vực lọc tìm kiếm */
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .filter-item {
+            flex: 1;
+            min-width: 150px;
+        }
+        .filter-item input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        /* Style nút */
+        button {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        /* Style danh sách kết quả */
+        #results-list {
+            list-style: none;
+            padding: 0;
+        }
+        .property-item {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            padding: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            background-color: #fafafa;
+        }
+        .property-item img {
+            max-width: 120px;
+            height: auto;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+        .property-info {
+            flex-grow: 1;
+        }
+        .property-info p {
+            margin: 5px 0;
+        }
+        .property-info strong {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="column column-left">
+        <h2>➕ Nhập Thông Tin Bất Động Sản</h2>
+        <form id="property-form">
+            <div class="form-group">
+                <label for="name">Tên / Tiêu đề:</label>
+                <input type="text" id="name" required placeholder="Ví dụ: Căn hộ cao cấp Quận 1">
+            </div>
+            <div class="form-group">
+                <label for="phone">Số điện thoại:</label>
+                <input type="text" id="phone" required placeholder="090...">
+            </div>
+            <div class="form-group">
+                <label for="address">Địa chỉ:</label>
+                <input type="text" id="address" required placeholder="123 Đường ABC, Phường X, Quận Y">
+            </div>
+            <div class="form-group">
+                <label for="price">Giá (VNĐ/tỷ):</label>
+                <input type="number" id="price" step="0.01" required placeholder="Ví dụ: 3.5 (tỷ)">
+            </div>
+            <div class="form-group">
+                <label for="area">Diện tích (m²):</label>
+                <input type="number" id="area" step="0.1" required placeholder="Ví dụ: 80.5">
+            </div>
+            <div class="form-group">
+                <label for="image-upload">Hình ảnh:</label>
+                <input type="file" id="image-upload" accept="image/*" required>
+            </div>
+            
+            <div class="form-group" id="preview-area">
+                <label>Xem trước ảnh đã chọn:</label>
+                <img id="image-preview" src="#" alt="Xem trước ảnh" style="max-width: 100%; height: auto; margin-top: 10px; border: 1px solid #ddd; display: none;">
+            </div>
+            
+            <button type="submit">Lưu Thông Tin</button>
+        </form>
+        <p style="margin-top: 15px; font-size: 0.9em; color: #6c757d;">*Dữ liệu được lưu trữ cục bộ trong trình duyệt của bạn (LocalStorage).</p>
+    </div>
+
+    <div class="column column-right">
+        <h2>🔍 Tìm Kiếm Chi Tiết</h2>
+        
+        <div class="filter-group">
+            <div class="filter-item">
+                <label for="filter-name">Tên / Tiêu đề:</label>
+                <input type="text" id="filter-name" placeholder="Tìm kiếm theo Tên..." onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-phone">Số điện thoại:</label>
+                <input type="text" id="filter-phone" placeholder="Tìm kiếm theo SĐT..." onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-address">Địa chỉ:</label>
+                <input type="text" id="filter-address" placeholder="Tìm kiếm theo Địa chỉ..." onkeyup="searchProperties()">
+            </div>
+        </div>
+        
+        <div class="filter-group">
+            <div class="filter-item">
+                <label for="filter-price-min">Giá thấp nhất (tỷ VNĐ):</label>
+                <input type="number" id="filter-price-min" step="0.01" placeholder="Min Giá..." onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-price-max">Giá cao nhất (tỷ VNĐ):</label>
+                <input type="number" id="filter-price-max" step="0.01" placeholder="Max Giá..." onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-area-min">Diện tích tối thiểu (m²):</label>
+                <input type="number" id="filter-area-min" step="0.1" placeholder="Min Diện tích..." onkeyup="searchProperties()">
+            </div>
+        </div>
+        
+        <h3>Danh sách Kết quả</h3>
+        <ul id="results-list">
+            </ul>
+    </div>
+
+</div>
+
+<script>
+    // =======================================================
+    // JAVASCRIPT: LOGIC VÀ LƯU TRỮ OFFLINE (LOCALSTORAGE)
+    // =======================================================
+
+    // 1. TẢI DỮ LIỆU ĐÃ LƯU TỪ LOCALSTORAGE
+    let properties = JSON.parse(localStorage.getItem('properties')) || [];
+
+    // Hàm lưu trữ dữ liệu vào LocalStorage
+    function saveProperties() {
+        localStorage.setItem('properties', JSON.stringify(properties));
+    }
+    
+    // Hàm xử lý xem trước ảnh
+    function previewImage() {
+        const fileInput = document.getElementById('image-upload');
+        const preview = document.getElementById('image-preview');
+        const file = fileInput.files[0];
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        } else {
+            preview.src = '#';
+            preview.style.display = 'none';
+        }
+    }
+    
+    // LẮNG NGHE SỰ KIỆN CHỌN ẢNH
+    document.getElementById('image-upload').addEventListener('change', previewImage);
+
+
+    // Xử lý Form nộp dữ liệu
+    document.getElementById('property-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const name = document.getElementById('name').value;
+        const phone = document.getElementById('phone').value;
+        const address = document.getElementById('address').value;
+        const price = parseFloat(document.getElementById('price').value);
+        const area = parseFloat(document.getElementById('area').value);
+        const imageFile = document.getElementById('image-upload').files[0];
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const imageBase64 = event.target.result;
+
+            const newProperty = {
+                id: Date.now(),
+                name: name,
+                phone: phone,
+                address: address,
+                price: price,
+                area: area,
+                image: imageBase64
+            };
+
+            properties.push(newProperty);
+            saveProperties(); // <<< LƯU DỮ LIỆU MỚI
+
+            alert('Đã lưu thông tin bất động sản thành công!');
+
+            // Reset form và ẩn ảnh xem trước
+            document.getElementById('property-form').reset();
+            document.getElementById('image-preview').style.display = 'none';
+            
+            searchProperties();
+        };
+
+        if (imageFile) {
+            reader.readAsDataURL(imageFile);
+        }
+    });
+
+    // Hàm tìm kiếm và lọc chi tiết
+    function searchProperties() {
+        // Lấy giá trị từ các ô lọc
+        const filterName = document.getElementById('filter-name').value.toLowerCase();
+        const filterPhone = document.getElementById('filter-phone').value.toLowerCase();
+        const filterAddress = document.getElementById('filter-address').value.toLowerCase();
+        
+        const filterPriceMin = parseFloat(document.getElementById('filter-price-min').value); 
+        const filterPriceMax = parseFloat(document.getElementById('filter-price-max').value); 
+        const filterAreaMin = parseFloat(document.getElementById('filter-area-min').value); 
+
+        const resultsList = document.getElementById('results-list');
+        resultsList.innerHTML = ''; // Xóa kết quả cũ
+
+        // Lọc danh sách tài sản dựa trên tất cả các tiêu chí
+        const filteredProperties = properties.filter(prop => {
+            // 1. Lọc theo Chuỗi (Tên, SĐT, Địa chỉ)
+            const matchName = prop.name.toLowerCase().includes(filterName);
+            const matchPhone = prop.phone.toLowerCase().includes(filterPhone);
+            const matchAddress = prop.address.toLowerCase().includes(filterAddress);
+            
+            // 2. Lọc theo Giá (Phạm vi)
+            const matchPriceMin = isNaN(filterPriceMin) || prop.price >= filterPriceMin; 
+            const matchPriceMax = isNaN(filterPriceMax) || prop.price <= filterPriceMax; 
+            const matchPrice = matchPriceMin && matchPriceMax;
+            
+            // 3. Lọc theo Diện tích
+            const matchArea = isNaN(filterAreaMin) || prop.area >= filterAreaMin;
+            
+            // Trả về true nếu tất cả các điều kiện đều đúng
+            return matchName && matchPhone && matchAddress && matchPrice && matchArea;
+        });
+
+        if (filteredProperties.length === 0) {
+            resultsList.innerHTML = '<p style="text-align: center; color: #dc3545;">Không tìm thấy kết quả nào phù hợp.</p>';
+            return;
+        }
+
+        // Hiển thị từng kết quả
+        filteredProperties.forEach(prop => {
+            const listItem = document.createElement('li');
+            listItem.className = 'property-item';
+            
+            // Định dạng giá trị
+            const formattedPrice = prop.price.toLocaleString('vi-VN', { minimumFractionDigits: 2 }) + ' tỷ VNĐ';
+            const formattedArea = prop.area.toLocaleString('vi-VN', { minimumFractionDigits: 1 }) + ' m²';
+
+            listItem.innerHTML = `
+                <img src="${prop.image}" alt="${prop.name}">
+                <div class="property-info">
+                    <p><strong>${prop.name}</strong></p>
+                    <p>Địa chỉ: ${prop.address}</p>
+                    <p>📞 ${prop.phone}</p>
+                    <p>💰 Giá: <strong>${formattedPrice}</strong></p>
+                    <p>📐 Diện tích: ${formattedArea}</p>
+                </div>
+            `;
+            resultsList.appendChild(listItem);
+        });
+    }
+
+    // TẢI DỮ LIỆU VÀ HIỂN THỊ KHI TRANG LOAD XONG
+    document.addEventListener('DOMContentLoaded', searchProperties);
+</script>
+
+</body>
+</html>
