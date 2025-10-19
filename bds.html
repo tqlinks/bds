@@ -99,6 +99,22 @@
         button:hover {
             background-color: #218838;
         }
+        .delete-btn {
+            background-color: #dc3545;
+            margin-left: 10px;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+        .update-img-btn {
+            background-color: #007bff;
+            padding: 5px 10px;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .update-img-btn:hover {
+            background-color: #0056b3;
+        }
 
         /* ======================================================= */
         /* CSS CHO KẾT QUẢ VÀ HÌNH ẢNH */
@@ -112,6 +128,15 @@
             gap: 15px;
             align-items: flex-start;
             background-color: #fafafa;
+            position: relative; /* Dùng cho nút cập nhật */
+        }
+        .property-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
         /* Container ảnh trong list item */
         .property-images {
@@ -120,9 +145,10 @@
             flex-wrap: wrap; 
             max-width: 150px; 
             cursor: pointer; /* Thêm con trỏ báo hiệu có thể click */
-            border: 1px solid #ccc; /* Thêm viền để dễ click hơn */
+            border: 1px solid #ccc; 
             padding: 5px;
             border-radius: 4px;
+            margin-top: 5px;
         }
         .property-images img {
             max-width: 100%; 
@@ -156,7 +182,7 @@
         /* CSS CHO MODAL / LIGHTBOX */
         /* ======================================================= */
         .modal-overlay {
-            display: none; /* Mặc định ẩn */
+            display: none; 
             position: fixed;
             z-index: 1000; 
             left: 0;
@@ -164,7 +190,7 @@
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgba(0, 0, 0, 0.9); /* Nền tối mờ */
+            background-color: rgba(0, 0, 0, 0.9);
             align-items: center;
             justify-content: center;
         }
@@ -192,21 +218,64 @@
         }
         .modal-close:hover,
         .modal-close:focus {
-            color: #fff;
+            color: #ff0000;
             text-decoration: none;
             cursor: pointer;
         }
+        
+        /* Modal Gallery Content */
         #modal-gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Hiển thị ảnh theo lưới */
-            gap: 15px;
-            margin-top: 40px; /* Khoảng cách từ nút đóng */
-        }
-        #modal-gallery img {
-            width: 100%;
-            height: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
             border-radius: 4px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            background-color: #fff;
+            margin-bottom: 20px;
+        }
+        .current-images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .image-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+        .image-wrapper img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            display: block;
+        }
+        .delete-image-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            text-align: center;
+            padding: 0;
+        }
+        .new-images-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .new-images-preview img {
+            max-width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border: 1px solid #007bff;
+            border-radius: 4px;
         }
     </style>
 </head>
@@ -401,8 +470,24 @@
     <div class="modal-content">
         <span class="modal-close" onclick="closeModal()">&times;</span>
         <h3 id="modal-title"></h3>
-        <div id="modal-gallery">
+        
+        <input type="hidden" id="current-property-id">
+
+        <h4>Ảnh Hiện Tại (Click để xóa)</h4>
+        <div id="modal-gallery" class="current-images-grid">
             </div>
+
+        <h4 style="margin-top: 20px;">Thêm/Cập nhật Ảnh</h4>
+        <div class="form-group-inline">
+            <div class="inline-item">
+                <input type="file" id="update-image-upload" accept="image/*" multiple>
+            </div>
+        </div>
+        
+        <div class="new-images-preview" id="new-images-preview">
+             </div>
+
+        <button onclick="saveUpdatedImages()" style="margin-top: 15px; width: 100%;">Lưu Cập Nhật Ảnh</button>
     </div>
 </div>
 
@@ -413,13 +498,16 @@
 
     // 1. TẢI DỮ LIỆU ĐÃ LƯU TỪ LOCALSTORAGE
     let properties = JSON.parse(localStorage.getItem('properties')) || [];
+    
+    // Biến tạm để lưu trữ các ảnh mới được chọn trong Modal
+    let newImagesToUpload = [];
 
     // Hàm lưu trữ dữ liệu vào LocalStorage
     function saveProperties() {
         localStorage.setItem('properties', JSON.stringify(properties));
     }
     
-    // Hàm xử lý xem trước nhiều ảnh
+    // Hàm xử lý xem trước nhiều ảnh (cho form nhập liệu)
     function previewImages() {
         const fileInput = document.getElementById('image-upload');
         const previewContainer = document.getElementById('preview-area-images');
@@ -438,9 +526,35 @@
             });
         }
     }
+
+    // Hàm xử lý xem trước ảnh mới (cho Modal cập nhật)
+    function previewNewImages(event) {
+        const fileInput = event.target;
+        const previewContainer = document.getElementById('new-images-preview');
+        previewContainer.innerHTML = ''; 
+        newImagesToUpload = []; // Reset mảng ảnh mới
+
+        if (fileInput.files.length > 0) {
+            Array.from(fileInput.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    newImagesToUpload.push(e.target.result);
+                    
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = "Ảnh mới xem trước";
+                    previewContainer.appendChild(img);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+    }
     
-    // LẮNG NGHE SỰ KIỆN CHỌN ẢNH
+    // LẮNG NGHE SỰ KIỆN CHỌN ẢNH FORM
     document.getElementById('image-upload').addEventListener('change', previewImages);
+
+    // LẮNG NGHE SỰ KIỆN CHỌN ẢNH TRONG MODAL
+    document.getElementById('update-image-upload').addEventListener('change', previewNewImages);
 
 
     // Xử lý Form nộp dữ liệu
@@ -479,7 +593,6 @@
                 filesProcessed++;
 
                 if (filesProcessed === imageFiles.length) {
-                    // Tạo đối tượng Bất động sản mới
                     const newProperty = {
                         id: Date.now(),
                         name: name,
@@ -514,7 +627,47 @@
         });
     });
 
-    // Hàm mở modal và hiển thị ảnh chi tiết
+    // Hàm xóa ảnh cũ trong Modal
+    function deleteImage(propertyId, imageBase64) {
+        if (!confirm('Bạn có chắc chắn muốn xóa hình ảnh này không?')) return;
+
+        const propertyIndex = properties.findIndex(p => p.id === propertyId);
+        if (propertyIndex === -1) return;
+
+        // Lọc bỏ hình ảnh khỏi mảng
+        properties[propertyIndex].images = properties[propertyIndex].images.filter(img => img !== imageBase64);
+
+        saveProperties();
+        
+        // Cập nhật lại giao diện Modal và danh sách kết quả
+        openModal(propertyId);
+        searchProperties();
+    }
+
+    // Hàm lưu cập nhật ảnh (từ Modal)
+    function saveUpdatedImages() {
+        const propertyId = parseInt(document.getElementById('current-property-id').value);
+        const propertyIndex = properties.findIndex(p => p.id === propertyId);
+        if (propertyIndex === -1) return;
+
+        // Ghép ảnh cũ (đã được lọc nếu có xóa) và ảnh mới
+        const currentImages = properties[propertyIndex].images;
+        const updatedImages = [...currentImages, ...newImagesToUpload];
+        
+        properties[propertyIndex].images = updatedImages;
+
+        saveProperties();
+        alert('Đã cập nhật hình ảnh thành công!');
+        
+        // Reset Modal và cập nhật danh sách
+        closeModal();
+        searchProperties();
+        
+        // Xóa ảnh tạm
+        newImagesToUpload = [];
+    }
+
+    // Hàm mở modal và hiển thị ảnh chi tiết/cập nhật
     function openModal(propertyId) {
         const property = properties.find(p => p.id === propertyId);
         if (!property) return;
@@ -522,19 +675,36 @@
         const modal = document.getElementById('imageModal');
         const gallery = document.getElementById('modal-gallery');
         const title = document.getElementById('modal-title');
-
-        title.textContent = 'Bộ sưu tập ảnh: ' + property.name;
-        gallery.innerHTML = ''; // Xóa ảnh cũ
+        
+        // Lưu ID BĐS đang thao tác
+        document.getElementById('current-property-id').value = propertyId;
+        
+        title.textContent = 'Cập nhật bộ sưu tập ảnh: ' + property.name;
+        gallery.innerHTML = ''; 
+        document.getElementById('new-images-preview').innerHTML = ''; // Xóa ảnh mới xem trước
 
         if (property.images && property.images.length > 0) {
             property.images.forEach(imgSrc => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'image-wrapper';
+                
                 const img = document.createElement('img');
                 img.src = imgSrc;
                 img.alt = property.name;
-                gallery.appendChild(img);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-image-btn';
+                deleteBtn.textContent = 'X';
+                deleteBtn.title = 'Xóa ảnh này';
+                // Thêm sự kiện xóa ảnh
+                deleteBtn.onclick = () => deleteImage(property.id, imgSrc); 
+                
+                wrapper.appendChild(img);
+                wrapper.appendChild(deleteBtn);
+                gallery.appendChild(wrapper);
             });
         } else {
-            gallery.innerHTML = '<p style="text-align: center;">Không có hình ảnh chi tiết.</p>';
+            gallery.innerHTML = '<p style="text-align: center;">Hiện không có hình ảnh nào.</p>';
         }
 
         modal.style.display = 'flex';
@@ -543,6 +713,10 @@
     // Hàm đóng modal
     function closeModal() {
         document.getElementById('imageModal').style.display = 'none';
+        
+        // Reset input file trong modal
+        document.getElementById('update-image-upload').value = null;
+        newImagesToUpload = []; // Xóa ảnh mới tạm
     }
 
     // Xử lý đóng modal khi click ra ngoài
@@ -620,6 +794,13 @@
             }
             imagesHtml += '</div>';
 
+            // Thêm nút Cập nhật Ảnh
+            const updateButtonHtml = `
+                <div class="property-actions">
+                    <button class="update-img-btn" onclick="openModal(${prop.id})">🖼️ Cập nhật Ảnh</button>
+                </div>
+            `;
+
             // Tạo chuỗi chi tiết
             const detailsHtml = `
                 <div class="property-details-grid">
@@ -637,6 +818,7 @@
 
 
             listItem.innerHTML = `
+                ${updateButtonHtml}
                 ${imagesHtml}
                 <div class="property-info">
                     <p><strong>${prop.name}</strong></p>
