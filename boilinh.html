@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bói Toán Lời Khuyên</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #007bff;
+            margin-bottom: 30px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="date"], select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box; /* Quan trọng để padding không làm tăng kích thước */
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #result-area {
+            margin-top: 40px;
+            padding: 20px;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            background-color: #fff9e6;
+            min-height: 100px;
+            white-space: pre-wrap; /* Giữ định dạng xuống dòng */
+        }
+        #result-area h2 {
+            color: #d9534f;
+            text-align: center;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Ứng Dụng Bói Toán Lời Khuyên</h1>
+
+    <form id="fortune-form">
+        <div class="form-group">
+            <label for="dob">Ngày Tháng Năm Sinh:</label>
+            <input type="date" id="dob" name="dob" required>
+        </div>
+
+        <div class="form-group">
+            <label for="element">Ngũ Hành (Kim, Mộc, Thủy, Hỏa, Thổ):</label>
+            <select id="element" name="element" required>
+                <option value="">-- Chọn Ngũ Hành --</option>
+                <option value="kim">Kim</option>
+                <option value="moc">Mộc</option>
+                <option value="thuy">Thủy</option>
+                <option value="hoa">Hỏa</option>
+                <option value="tho">Thổ</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="belief">Tín Ngưỡng / Đạo Giáo:</label>
+            <select id="belief" name="belief" required>
+                <option value="">-- Chọn Tín Ngưỡng/Đạo Giáo --</option>
+                <option value="buddism">Phật Giáo</option>
+                <option value="taoism">Đạo Giáo</option>
+                <option value="catholic">Công Giáo</option>
+                <option value="folk">Tín Ngưỡng Dân Gian</option>
+                <option value="none">Không có</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="country">Quốc Gia:</label>
+            <select id="country" name="country" required>
+                <option value="">-- Chọn Quốc Gia --</option>
+                <option value="vietnam">Việt Nam</option>
+                <option value="china">Trung Quốc</option>
+                <option value="usa">Hoa Kỳ</option>
+                <option value="japan">Nhật Bản</option>
+                <option value="other">Khác</option>
+            </select>
+        </div>
+
+        <button type="submit">Xem Lời Khuyên</button>
+    </form>
+
+    <div id="result-area">
+        <h2>Bài Thơ Lời Khuyên</h2>
+        <p id="poem-output">
+            Hãy điền đầy đủ thông tin và nhấn nút "Xem Lời Khuyên" để nhận bài thơ của bạn.
+        </p>
+    </div>
+</div>
+
+<script>
+    // ******************************************************
+    // LƯU Ý QUAN TRỌNG:
+    // Phần JavaScript này CHỈ MÔ PHỎNG việc tạo ra bài thơ.
+    // Logic bói toán THỰC TẾ (tính toán sự phù hợp) cần
+    // một hệ thống backend phức tạp hơn nhiều.
+    // ******************************************************
+
+    const form = document.getElementById('fortune-form');
+    const poemOutput = document.getElementById('poem-output');
+
+    // Mảng các thành ngữ/câu thơ mẫu (cần khoảng 8 câu cho mỗi kết quả)
+    const advicePool = [
+        "Lòng người như nước, lúc xuôi lúc ngược,",
+        "Vạn sự tùy duyên, chớ quá ưu phiền.",
+        "Khổ tận cam lai, hoa nở cuối mùa,",
+        "Một chữ nhẫn là hơn ngàn lời nói.",
+        "Nước chảy đá mòn, công phu ắt thành,",
+        "Gieo nhân nào gặt quả đó, luật đời.",
+        "Đi một ngày đàng, học một sàng khôn,",
+        "Quý hồ tinh thần, không quý hồ đa.",
+        "Thời tới cản không kịp, hãy nắm bắt,",
+        "Bình tĩnh trước giông bão, mới là người hùng."
+    ];
+
+    // Hàm tạo bài thơ 8 câu ngẫu nhiên (chỉ mang tính minh họa)
+    function generatePoem(data) {
+        let poem = "";
+        // Sử dụng một hàm băm đơn giản (hash) từ dữ liệu để đảm bảo
+        // cùng một đầu vào cho cùng một kết quả (cũng chỉ là mô phỏng)
+        const seed = JSON.stringify(data).length;
+
+        // Chọn 8 câu ngẫu nhiên từ advicePool
+        const selectedAdvice = [];
+        const tempPool = [...advicePool]; // Tạo bản sao để tránh thay đổi bản gốc
+
+        // Thuật toán chọn ngẫu nhiên đơn giản
+        for (let i = 0; i < 8; i++) {
+            if (tempPool.length > 0) {
+                const randomIndex = Math.floor(Math.random() * tempPool.length);
+                selectedAdvice.push(tempPool.splice(randomIndex, 1)[0]);
+            } else {
+                // Đảm bảo đủ 8 câu nếu pool quá nhỏ
+                selectedAdvice.push(advicePool[i % advicePool.length]);
+            }
+        }
+
+        // Tạo bài thơ với định dạng 4 câu 1 khổ, cách nhau bằng dòng trống
+        for (let i = 0; i < 8; i++) {
+            poem += selectedAdvice[i] + "\n";
+            if (i === 3) {
+                poem += "\n"; // Dòng trống sau câu thứ 4
+            }
+        }
+
+        return poem;
+    }
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault(); // Ngăn form gửi đi theo cách thông thường
+
+        // 1. Thu thập dữ liệu
+        const formData = {
+            dob: document.getElementById('dob').value,
+            element: document.getElementById('element').value,
+            belief: document.getElementById('belief').value,
+            country: document.getElementById('country').value
+        };
+
+        // 2. Logic Bói Toán (Mô phỏng)
+        // Trong thực tế, bạn sẽ gửi formData này đến server (PHP, Node.js, Python, v.v.)
+        // để xử lý logic bói toán phức tạp và nhận về bài thơ phù hợp.
+        // Ở đây, chúng ta dùng hàm ngẫu nhiên hóa/mô phỏng.
+        const poem = generatePoem(formData);
+
+        // 3. Hiển thị kết quả
+        poemOutput.innerHTML = poem;
+    });
+</script>
+
+</body>
+</html>
