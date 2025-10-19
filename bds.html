@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Web Quản Lý & Tìm Kiếm Bất Động Sản Offline</title>
+    <style>
+        /* ======================================================= */
+        /* CSS CHO GIAO DIỆN CHUNG */
+        /* ======================================================= */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+        .column {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .column-left {
+            flex: 1.5;
+        }
+        .column-right {
+            flex: 2;
+        }
+        h2 {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group input[type="file"],
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        /* Input Inline */
+        .form-group-inline {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .form-group-inline .inline-item {
+            flex: 1;
+        }
+        .form-group-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            height: 40px; 
+            margin-top: 25px;
+        }
+        .form-group-checkbox input[type="checkbox"] {
+            width: 20px; 
+            height: 20px;
+            margin: 0;
+            padding: 0;
+            border: 1px solid #ccc;
+        }
+        .filter-item-checkbox { 
+            align-self: flex-end; 
+            padding-bottom: 5px;
+        }
+
+        /* Nút chung */
+        button {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+
+        /* ======================================================= */
+        /* CSS CHO KẾT QUẢ VÀ HÌNH ẢNH */
+        /* ======================================================= */
+        .property-item {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            padding: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            background-color: #fafafa;
+        }
+        /* Container ảnh trong list item */
+        .property-images {
+            display: flex; 
+            gap: 5px; 
+            flex-wrap: wrap; 
+            max-width: 150px; 
+            cursor: pointer; /* Thêm con trỏ báo hiệu có thể click */
+            border: 1px solid #ccc; /* Thêm viền để dễ click hơn */
+            padding: 5px;
+            border-radius: 4px;
+        }
+        .property-images img {
+            max-width: 100%; 
+            height: 70px; 
+            width: auto;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+        .property-details-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px 10px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        /* CSS xem trước nhiều ảnh (input form) */
+        #preview-area-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        #preview-area-images img {
+            max-width: 100px; 
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        /* ======================================================= */
+        /* CSS CHO MODAL / LIGHTBOX */
+        /* ======================================================= */
+        .modal-overlay {
+            display: none; /* Mặc định ẩn */
+            position: fixed;
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.9); /* Nền tối mờ */
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%; 
+            max-width: 900px; 
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            z-index: 1001;
+        }
+        .modal-close:hover,
+        .modal-close:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        #modal-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Hiển thị ảnh theo lưới */
+            gap: 15px;
+            margin-top: 40px; /* Khoảng cách từ nút đóng */
+        }
+        #modal-gallery img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="column column-left">
+        <h2>➕ Nhập Thông Tin Bất Động Sản</h2>
+        <form id="property-form">
+            <div class="form-group">
+                <label for="name">Tên / Tiêu đề:</label>
+                <input type="text" id="name" required placeholder="Ví dụ: Căn hộ cao cấp Quận 1">
+            </div>
+            <div class="form-group">
+                <label for="phone">Số điện thoại:</label>
+                <input type="text" id="phone" required placeholder="090...">
+            </div>
+            <div class="form-group">
+                <label for="address">Địa chỉ:</label>
+                <input type="text" id="address" required placeholder="123 Đường ABC, Phường X, Quận Y">
+            </div>
+            
+            <div class="form-group-inline">
+                <div class="inline-item">
+                    <label for="price">Giá (VNĐ/tỷ):</label>
+                    <input type="number" id="price" step="0.01" required placeholder="Ví dụ: 3.5 (tỷ)">
+                </div>
+                <div class="inline-item">
+                    <label for="area">Diện tích (m²):</label>
+                    <input type="number" id="area" step="0.1" required placeholder="Ví dụ: 80.5">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="direction">Hướng Nhà:</label>
+                <select id="direction" required>
+                    <option value="">Chọn Hướng</option>
+                    <option value="Đông">Đông</option>
+                    <option value="Tây">Tây</option>
+                    <option value="Nam">Nam</option>
+                    <option value="Bắc">Bắc</option>
+                    <option value="Đông-Bắc">Đông-Bắc</option>
+                    <option value="Đông-Nam">Đông-Nam</option>
+                    <option value="Tây-Bắc">Tây-Bắc</option>
+                    <option value="Tây-Nam">Tây-Nam</option>
+                </select>
+            </div>
+            
+            <div class="form-group-inline">
+                <div class="inline-item">
+                    <label for="bedrooms">Số PN:</label>
+                    <input type="number" id="bedrooms" min="0" required placeholder="Phòng ngủ">
+                </div>
+                <div class="inline-item">
+                    <label for="wc">Số WC:</label>
+                    <input type="number" id="wc" min="0" required placeholder="Phòng WC">
+                </div>
+                <div class="inline-item">
+                    <label for="kitchens">Số Bếp:</label>
+                    <input type="number" id="kitchens" min="0" required placeholder="Bếp">
+                </div>
+                <div class="inline-item">
+                    <label for="floors">Số Lầu:</label>
+                    <input type="number" id="floors" min="0" required placeholder="Số tầng">
+                </div>
+            </div>
+
+            <div class="form-group-inline">
+                <div class="inline-item">
+                    <label for="legal">Tình trạng Sổ:</label>
+                    <select id="legal" required>
+                        <option value="">Chọn Tình trạng</option>
+                        <option value="Sổ Hồng">Sổ Hồng</option>
+                        <option value="Sổ Đỏ">Sổ Đỏ</option>
+                        <option value="Hợp Đồng Mua Bán">Hợp Đồng Mua Bán</option>
+                        <option value="Chưa có Sổ">Chưa có Sổ</option>
+                    </select>
+                </div>
+                <div class="inline-item">
+                    <div class="form-group-checkbox">
+                        <input type="checkbox" id="loanable">
+                        <label for="loanable" style="margin-bottom: 0;">Có thể vay thêm</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="image-upload">Hình ảnh (Có thể chọn nhiều):</label>
+                <input type="file" id="image-upload" accept="image/*" multiple required>
+            </div>
+            
+            <div class="form-group" id="preview-area">
+                <label>Xem trước ảnh đã chọn:</label>
+                <div id="preview-area-images"></div>
+            </div>
+            
+            <button type="submit">Lưu Thông Tin</button>
+        </form>
+        <p style="margin-top: 15px; font-size: 0.9em; color: #6c757d;">*Dữ liệu được lưu trữ cục bộ trong trình duyệt của bạn (LocalStorage).</p>
+    </div>
+
+    <div class="column column-right">
+        <h2>🔍 Tìm Kiếm Chi Tiết</h2>
+        
+        <div class="filter-group">
+            <div class="filter-item">
+                <label for="filter-name">Tên / Tiêu đề:</label>
+                <input type="text" id="filter-name" placeholder="Tìm kiếm theo Tên..." onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-phone">Số điện thoại:</label>
+                <input type="text" id="filter-phone" placeholder="Tìm kiếm theo SĐT..." onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-address">Địa chỉ:</label>
+                <input type="text" id="filter-address" placeholder="Tìm kiếm theo Địa chỉ..." onkeyup="searchProperties()">
+            </div>
+        </div>
+        
+        <div class="filter-group">
+            <div class="filter-item">
+                <label for="filter-price-min">Giá min (tỷ VNĐ):</label>
+                <input type="number" id="filter-price-min" step="0.01" placeholder="Min Giá..." onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-price-max">Giá max (tỷ VNĐ):</label>
+                <input type="number" id="filter-price-max" step="0.01" placeholder="Max Giá..." onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-area-min">Diện tích min (m²):</label>
+                <input type="number" id="filter-area-min" step="0.1" placeholder="Min Diện tích..." onkeyup="searchProperties()">
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-item">
+                <label for="filter-direction">Hướng Nhà:</label>
+                <select id="filter-direction" onchange="searchProperties()">
+                    <option value="">Tất cả</option>
+                    <option value="Đông">Đông</option>
+                    <option value="Tây">Tây</option>
+                    <option value="Nam">Nam</option>
+                    <option value="Bắc">Bắc</option>
+                    <option value="Đông-Bắc">Đông-Bắc</option>
+                    <option value="Đông-Nam">Đông-Nam</option>
+                    <option value="Tây-Bắc">Tây-Bắc</option>
+                    <option value="Tây-Nam">Tây-Nam</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label for="filter-legal">Tình trạng Sổ:</label>
+                <select id="filter-legal" onchange="searchProperties()">
+                    <option value="">Tất cả</option>
+                    <option value="Sổ Hồng">Sổ Hồng</option>
+                    <option value="Sổ Đỏ">Sổ Đỏ</option>
+                    <option value="Hợp Đồng Mua Bán">Hợp Đồng Mua Bán</option>
+                    <option value="Chưa có Sổ">Chưa có Sổ</option>
+                </select>
+            </div>
+            <div class="filter-item filter-item-checkbox">
+                <div class="form-group-checkbox">
+                    <input type="checkbox" id="filter-loanable" onchange="searchProperties()">
+                    <label for="filter-loanable">Chỉ hiện BĐS có thể vay</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-item">
+                <label for="filter-bedrooms-min">PN tối thiểu:</label>
+                <input type="number" id="filter-bedrooms-min" min="0" placeholder="Min PN" onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-wc-min">WC tối thiểu:</label>
+                <input type="number" id="filter-wc-min" min="0" placeholder="Min WC" onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-floors-min">Lầu tối thiểu:</label>
+                <input type="number" id="filter-floors-min" min="0" placeholder="Min Lầu" onkeyup="searchProperties()">
+            </div>
+        </div>
+        
+        <h3>Danh sách Kết quả</h3>
+        <ul id="results-list">
+        </ul>
+    </div>
+
+</div>
+
+<div id="imageModal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <h3 id="modal-title"></h3>
+        <div id="modal-gallery">
+            </div>
+    </div>
+</div>
+
+<script>
+    // =======================================================
+    // JAVASCRIPT: LOGIC VÀ LƯU TRỮ OFFLINE (LOCALSTORAGE)
+    // =======================================================
+
+    // 1. TẢI DỮ LIỆU ĐÃ LƯU TỪ LOCALSTORAGE
+    let properties = JSON.parse(localStorage.getItem('properties')) || [];
+
+    // Hàm lưu trữ dữ liệu vào LocalStorage
+    function saveProperties() {
+        localStorage.setItem('properties', JSON.stringify(properties));
+    }
+    
+    // Hàm xử lý xem trước nhiều ảnh
+    function previewImages() {
+        const fileInput = document.getElementById('image-upload');
+        const previewContainer = document.getElementById('preview-area-images');
+        previewContainer.innerHTML = ''; 
+
+        if (fileInput.files.length > 0) {
+            Array.from(fileInput.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = "Ảnh xem trước";
+                    previewContainer.appendChild(img);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+    }
+    
+    // LẮNG NGHE SỰ KIỆN CHỌN ẢNH
+    document.getElementById('image-upload').addEventListener('change', previewImages);
+
+
+    // Xử lý Form nộp dữ liệu
+    document.getElementById('property-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Lấy giá trị form
+        const name = document.getElementById('name').value;
+        const phone = document.getElementById('phone').value;
+        const address = document.getElementById('address').value;
+        const price = parseFloat(document.getElementById('price').value);
+        const area = parseFloat(document.getElementById('area').value);
+        const direction = document.getElementById('direction').value;
+        const bedrooms = parseInt(document.getElementById('bedrooms').value);
+        const wc = parseInt(document.getElementById('wc').value);
+        const kitchens = parseInt(document.getElementById('kitchens').value);
+        const floors = parseInt(document.getElementById('floors').value);
+        const legal = document.getElementById('legal').value;
+        const loanable = document.getElementById('loanable').checked;
+
+        const imageFiles = document.getElementById('image-upload').files; 
+
+        if (imageFiles.length === 0) {
+            alert('Vui lòng chọn ít nhất một hình ảnh.');
+            return;
+        }
+
+        const imageBase64Array = []; 
+        let filesProcessed = 0;
+        
+        // Đọc từng file và lưu Base64
+        Array.from(imageFiles).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                imageBase64Array.push(event.target.result);
+                filesProcessed++;
+
+                if (filesProcessed === imageFiles.length) {
+                    // Tạo đối tượng Bất động sản mới
+                    const newProperty = {
+                        id: Date.now(),
+                        name: name,
+                        phone: phone,
+                        address: address,
+                        price: price,
+                        area: area,
+                        images: imageBase64Array, 
+                        
+                        direction: direction,
+                        bedrooms: bedrooms,
+                        wc: wc,
+                        kitchens: kitchens,
+                        floors: floors,
+                        legal: legal,
+                        loanable: loanable
+                    };
+
+                    properties.push(newProperty);
+                    saveProperties(); 
+
+                    alert('Đã lưu thông tin bất động sản thành công!');
+
+                    // Reset form và xóa ảnh xem trước
+                    document.getElementById('property-form').reset();
+                    document.getElementById('preview-area-images').innerHTML = ''; 
+                    
+                    searchProperties();
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+
+    // Hàm mở modal và hiển thị ảnh chi tiết
+    function openModal(propertyId) {
+        const property = properties.find(p => p.id === propertyId);
+        if (!property) return;
+
+        const modal = document.getElementById('imageModal');
+        const gallery = document.getElementById('modal-gallery');
+        const title = document.getElementById('modal-title');
+
+        title.textContent = 'Bộ sưu tập ảnh: ' + property.name;
+        gallery.innerHTML = ''; // Xóa ảnh cũ
+
+        if (property.images && property.images.length > 0) {
+            property.images.forEach(imgSrc => {
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.alt = property.name;
+                gallery.appendChild(img);
+            });
+        } else {
+            gallery.innerHTML = '<p style="text-align: center;">Không có hình ảnh chi tiết.</p>';
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    // Hàm đóng modal
+    function closeModal() {
+        document.getElementById('imageModal').style.display = 'none';
+    }
+
+    // Xử lý đóng modal khi click ra ngoài
+    window.onclick = function(event) {
+        const modal = document.getElementById('imageModal');
+        if (event.target === modal) {
+            closeModal();
+        }
+    }
+
+
+    // Hàm tìm kiếm và lọc chi tiết
+    function searchProperties() {
+        // Lấy giá trị từ các ô lọc
+        const filterName = document.getElementById('filter-name').value.toLowerCase();
+        const filterPhone = document.getElementById('filter-phone').value.toLowerCase();
+        const filterAddress = document.getElementById('filter-address').value.toLowerCase();
+        const filterPriceMin = parseFloat(document.getElementById('filter-price-min').value);    
+        const filterPriceMax = parseFloat(document.getElementById('filter-price-max').value);    
+        const filterAreaMin = parseFloat(document.getElementById('filter-area-min').value);    
+        const filterDirection = document.getElementById('filter-direction').value;
+        const filterLegal = document.getElementById('filter-legal').value;
+        const filterLoanable = document.getElementById('filter-loanable').checked;
+        const filterBedroomsMin = parseInt(document.getElementById('filter-bedrooms-min').value);
+        const filterWCMin = parseInt(document.getElementById('filter-wc-min').value);
+        const filterFloorsMin = parseInt(document.getElementById('filter-floors-min').value);
+
+
+        const resultsList = document.getElementById('results-list');
+        resultsList.innerHTML = '';
+
+        // Lọc danh sách tài sản dựa trên tất cả các tiêu chí
+        const filteredProperties = properties.filter(prop => {
+            const matchName = prop.name.toLowerCase().includes(filterName);
+            const matchPhone = prop.phone.toLowerCase().includes(filterPhone);
+            const matchAddress = prop.address.toLowerCase().includes(filterAddress);
+            const matchPriceMin = isNaN(filterPriceMin) || prop.price >= filterPriceMin;    
+            const matchPriceMax = isNaN(filterPriceMax) || prop.price <= filterPriceMax;    
+            const matchPrice = matchPriceMin && matchPriceMax;
+            const matchArea = isNaN(filterAreaMin) || prop.area >= filterAreaMin;
+            const matchDirection = filterDirection === "" || prop.direction === filterDirection;
+            const matchLegal = filterLegal === "" || prop.legal === filterLegal;
+            const matchLoanable = !filterLoanable || prop.loanable === true; 
+            const matchBedrooms = isNaN(filterBedroomsMin) || prop.bedrooms >= filterBedroomsMin;
+            const matchWC = isNaN(filterWCMin) || prop.wc >= filterWCMin;
+            const matchFloors = isNaN(filterFloorsMin) || prop.floors >= filterFloorsMin;
+            
+            return matchName && matchPhone && matchAddress && matchPrice && matchArea && 
+                   matchDirection && matchLegal && matchLoanable && 
+                   matchBedrooms && matchWC && matchFloors;
+        });
+
+        if (filteredProperties.length === 0) {
+            resultsList.innerHTML = '<p style="text-align: center; color: #dc3545;">Không tìm thấy kết quả nào phù hợp.</p>';
+            return;
+        }
+
+        // Hiển thị từng kết quả
+        filteredProperties.forEach(prop => {
+            const listItem = document.createElement('li');
+            listItem.className = 'property-item';
+            
+            const formattedPrice = prop.price.toLocaleString('vi-VN', { minimumFractionDigits: 2 }) + ' tỷ VNĐ';
+            const formattedArea = prop.area.toLocaleString('vi-VN', { minimumFractionDigits: 1 }) + ' m²';
+
+            // Tạo chuỗi HTML cho nhiều hình ảnh (có thể click)
+            let imagesHtml = `<div class="property-images" onclick="openModal(${prop.id})">`;
+            if (prop.images && prop.images.length > 0) {
+                const imagesToShow = prop.images.slice(0, 3); 
+                imagesToShow.forEach(imgSrc => {
+                    imagesHtml += `<img src="${imgSrc}" alt="${prop.name}">`;
+                });
+            } else {
+                imagesHtml += `<img src="https://via.placeholder.com/70x70?text=No+Image" alt="No Image">`;
+            }
+            imagesHtml += '</div>';
+
+            // Tạo chuỗi chi tiết
+            const detailsHtml = `
+                <div class="property-details-grid">
+                    <span>🏠 Hướng: ${prop.direction || 'N/A'}</span>
+                    <span>🛏️ PN: ${prop.bedrooms || 0}</span>
+                    <span>🚽 WC: ${prop.wc || 0}</span>
+                    <span>🍳 Bếp: ${prop.kitchens || 0}</span>
+                    <span>🏢 Lầu: ${prop.floors || 0}</span>
+                    <span>📜 Sổ: ${prop.legal || 'N/A'}</span>
+                    <span style="grid-column: span 3; color: ${prop.loanable ? '#28a745' : '#dc3545'};">
+                        ${prop.loanable ? '✅ Có thể vay thêm' : '❌ Không vay thêm'}
+                    </span>
+                </div>
+            `;
+
+
+            listItem.innerHTML = `
+                ${imagesHtml}
+                <div class="property-info">
+                    <p><strong>${prop.name}</strong></p>
+                    <p>Địa chỉ: ${prop.address}</p>
+                    <p>📞 ${prop.phone}</p>
+                    <p>💰 Giá: <strong>${formattedPrice}</strong></p>
+                    <p>📐 Diện tích: ${formattedArea}</p>
+                    ${detailsHtml}
+                </div>
+            `;
+            resultsList.appendChild(listItem);
+        });
+    }
+
+    // TẢI DỮ LIỆU VÀ HIỂN THỊ KHI TRANG LOAD XONG
+    document.addEventListener('DOMContentLoaded', searchProperties);
+</script>
+
+</body>
+</html>
