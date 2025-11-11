@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lời Chúc Rơi Lấp Lánh</title>
+    <style>
+        /* Thiết lập nền trang (màu đen với hiệu ứng sao) */
+        body {
+            background-color: #000000;
+            color: #ecf0f1;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+            /* Thêm hiệu ứng sao/kim tuyến bằng cách dùng gradient làm nền */
+            background-image: radial-gradient(white, rgba(255, 255, 255, 0.2) 2px, transparent 40px),
+                              radial-gradient(yellow, rgba(255, 255, 255, 0.15) 1px, transparent 30px);
+            background-size: 500px 500px, 300px 300px;
+            background-position: 0 0, 50px 50px;
+        }
+
+        /* Tiêu đề chính */
+        h1 {
+            color: #e74c3c; /* Màu đỏ cho tiêu đề */
+            z-index: 10;
+            position: relative;
+            margin-bottom: 50px;
+            font-size: 2.5em;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.7); /* Nền mờ */
+            border-radius: 10px;
+            text-shadow: 0 0 10px #f1c40f, 0 0 20px #e74c3c; /* Hiệu ứng tỏa sáng */
+        }
+
+        /* Container cho các lời chúc rơi */
+        .falling-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        /* Định nghĩa hiệu ứng rơi (chuyển động thẳng và nhẹ nhàng hơn) */
+        @keyframes fall {
+            0% {
+                transform: translateY(-100px);
+                opacity: 1; /* Bắt đầu sáng hơn */
+            }
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+
+        /* Phong cách cho mỗi lời chúc (mỗi item rơi) */
+        .falling-text {
+            position: absolute;
+            font-size: 1.5em; /* Chữ lớn hơn một chút */
+            white-space: nowrap;
+            opacity: 0;
+            font-weight: bold;
+            text-shadow: 0 0 5px, 0 0 10px; /* Hiệu ứng lấp lánh nhẹ cho chữ */
+            animation-name: fall;
+            animation-timing-function: ease-in; /* Rơi hơi chậm lại khi chạm đất */
+            animation-fill-mode: forwards;
+        }
+
+        /* Các lớp màu sắc ngẫu nhiên */
+        .color-white {
+            color: white;
+            text-shadow: 0 0 5px #ffffff, 0 0 10px #ffffff;
+        }
+        .color-pink {
+            color: #ff9ff3; /* Hồng nhạt */
+            text-shadow: 0 0 5px #ff9ff3, 0 0 10px #ff9ff3;
+        }
+        .color-red {
+            color: #e74c3c; /* Đỏ */
+            text-shadow: 0 0 5px #e74c3c, 0 0 10px #e74c3c;
+        }
+        .color-heart {
+            color: #ff4757; /* Màu trái tim */
+            text-shadow: 0 0 5px #ff4757, 0 0 10px #ff4757;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Kính Chúc Mừng Ngày 19/11 ❤️</h1>
+    <div class="falling-container" id="fallingContainer">
+    </div>
+
+    <script>
+        const messages = [
+            "Chúc anh 19/11 hạnh phúc ❤️",
+            "Quốc tế đàn ông vui vẻ nhé!",
+            "Chồng iu hạnh phúc nhé!",
+            "Love you",
+            "19/11",
+            "Quốc tế đàn ông",
+            "Yêu anh",
+            "Chồng iu"
+        ];
+        
+        const colors = [
+            'color-white',
+            'color-pink',
+            'color-red',
+            'color-heart'
+        ];
+
+        const container = document.getElementById('fallingContainer');
+
+        function createFallingText() {
+            // Chọn ngẫu nhiên một lời chúc
+            const randomIndex = Math.floor(Math.random() * messages.length);
+            const text = messages[randomIndex];
+            
+            // Chọn ngẫu nhiên một màu sắc
+            const randomColorIndex = Math.floor(Math.random() * colors.length);
+            const colorClass = colors[randomColorIndex];
+
+            // Tạo phần tử HTML
+            const textElement = document.createElement('div');
+            textElement.classList.add('falling-text', colorClass); // Thêm class màu sắc
+            textElement.textContent = text;
+
+            // Thiết lập vị trí rơi ngẫu nhiên (chiều ngang)
+            const startX = Math.random() * window.innerWidth;
+            textElement.style.left = `${startX}px`;
+            
+            // Thiết lập vị trí bắt đầu ngẫu nhiên (để rơi từ các điểm khác nhau)
+            const startY = -100 - Math.random() * 50; // Bắt đầu từ -100px đến -150px
+            textElement.style.top = `${startY}px`;
+
+            // Thiết lập thời gian và độ trễ ngẫu nhiên cho hiệu ứng rơi
+            const duration = 8 + Math.random() * 5; // Từ 8 đến 13 giây (rơi chậm hơn)
+            const delay = Math.random() * 10; // Độ trễ từ 0 đến 10 giây (tạo sự phân tán)
+
+            textElement.style.animationDuration = `${duration}s`;
+            textElement.style.animationDelay = `${delay}s`;
+
+            // Thêm vào container
+            container.appendChild(textElement);
+
+            // Xóa phần tử sau khi rơi xong để tối ưu hiệu suất
+            setTimeout(() => {
+                textElement.remove();
+            }, (duration + delay) * 1000);
+        }
+
+        // Tạo các lời chúc rơi liên tục
+        // Tạo khoảng 4-5 lời chúc mỗi giây
+        setInterval(createFallingText, 250); 
+    </script>
+
+</body>
+</html>
