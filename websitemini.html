@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thiệp Chúc Mừng 20/11 - Có Hình Nền</title>
+    <style>
+        /* Thiết lập cơ bản cho trang */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+            font-family: 'Arial', sans-serif;
+            background-image: url('1.jpg'); /* Nền toàn bộ trang */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed; /* Giữ nền cố định khi cuộn */
+        }
+
+        /* CONTAINER THIỆP */
+        .card-container {
+            width: 300px;
+            height: 400px;
+            position: relative;
+            cursor: pointer;
+            border-radius: 10px; /* Thêm bo góc cho toàn bộ container */
+            overflow: hidden; /* Cắt bỏ phần thừa của ảnh nền */
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3); /* Bóng đổ mạnh hơn */
+        }
+
+        /* LỜI CHÚC (MẶT TRONG) */
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9); /* Nền trắng hơi trong suốt */
+            border-radius: 10px;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+            position: absolute;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.5s 0.5s;
+
+            /* HÌNH NỀN CHO LỜI CHÚC */
+            background-image: url('1.jpg'); /* ĐƯỜNG DẪN HÌNH NỀN MẶT TRONG */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        /* Đảm bảo nội dung lời chúc nổi bật trên nền */
+        .card-inner h3, .card-inner .message, .card-inner .signature {
+            background-color: rgba(255, 255, 255, 0.7); /* Nền trắng mờ cho chữ */
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .card-inner h3 {
+            color: #8e44ad; /* Màu tím */
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        .card-inner .message {
+            font-size: 16px;
+            line-height: 1.6;
+            text-align: left;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            color: #34495e; /* Màu chữ đậm */
+        }
+        .card-inner .signature {
+            margin-top: 20px;
+            font-style: italic;
+            font-weight: bold;
+            color: #7f8c8d; /* Màu chữ ký */
+        }
+        
+        /* Nút Đóng */
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.5); /* Nền mờ cho nút */
+            border: none;
+            border-radius: 50%; /* Nút tròn */
+            width: 30px;
+            height: 30px;
+            font-size: 18px;
+            color: #c0392b; /* Màu đỏ đậm */
+            cursor: pointer;
+            z-index: 2;
+            opacity: 0.8;
+            transition: opacity 0.3s, transform 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .close-button:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        /* HAI CÁNH CỬA (MẶT TRƯỚC) */
+        .door {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            background-color: #e74c3c; /* Màu nền cũ */
+            transition: transform 1s cubic-bezier(0.5, 0, 0.5, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            z-index: 10;
+            color: white; /* Màu chữ trên cánh cửa */
+
+            /* HÌNH NỀN CHO CÁNH CỬA */
+            background-image: url('2.jpg'); /* ĐƯỜNG DẪN HÌNH NỀN MẶT TRƯỚC */
+            background-size: 200% 100%; /* Chia đôi hình nền cho 2 cánh */
+            background-repeat: no-repeat;
+        }
+
+        /* Vị trí hình nền cho cánh trái và cánh phải */
+        #door-left {
+            left: 0;
+            border-top-left-radius: 10px;
+            border-bottom-left-radius: 10px;
+            transform-origin: left;
+            background-position: left center; /* Lấy nửa bên trái của ảnh */
+        }
+
+        #door-right {
+            right: 0;
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
+            transform-origin: right;
+            background-position: right center; /* Lấy nửa bên phải của ảnh */
+        }
+
+        /* NỘI DUNG MẶT TRƯỚC */
+        .door-content {
+            padding: 10px;
+            text-align: center;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.4); /* Nền mờ cho chữ trên ảnh */
+            border-radius: 8px;
+            margin: 0 5px; /* Khoảng cách với viền cánh cửa */
+        }
+        .door-content h2 {
+            font-size: 22px;
+            margin: 0;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+        .door-content p {
+            font-size: 14px;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        .door-content .icon {
+            font-size: 30px;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Hiệu ứng Mở (khi có class 'open') */
+        .card-container.open #door-left {
+            transform: translateX(-100%);
+        }
+
+        .card-container.open #door-right {
+            transform: translateX(100%);
+        }
+
+        .card-container.open .card-inner {
+            opacity: 1;
+        }
+        
+        /* Hiệu ứng nhấp nháy cho thông báo */
+        .click-hint {
+            position: absolute;
+            bottom: 10px;
+            font-size: 14px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            animation: pulse 1.5s infinite;
+            z-index: 11;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card-container" id="greetingCardContainer">
+
+        <div class="card-inner">
+            <button class="close-button" onclick="closeCard(event)">✕</button>
+            <h3>Lời Chúc Từ Trái Tim</h3>
+            <p class="message" id="randomMessage">
+                </p>
+            <p class="signature">
+                Tập thể học trò
+            </p>
+        </div>
+
+        <div class="door" id="door-left">
+             <div class="door-content">
+                <div class="icon">🌹</div>
+                <h2>CHÚC MỪNG 20/11</h2>
+                <p>Ngày Nhà giáo Việt Nam</p>
+            </div>
+        </div>
+
+        <div class="door" id="door-right">
+             <div class="door-content">
+                <div class="icon">🍎</div>
+                <h2 style="font-size: 18px;">Lòng Tri Ân</h2>
+                <p>Mở thiệp để xem lời chúc</p>
+            </div>
+        </div>
+        
+        <div class="click-hint" id="clickHint">
+            (Bấm vào thiệp để mở!)
+        </div>
+    </div>
+
+    <script>
+        // Danh sách các lời chúc ngẫu nhiên
+        const messages = [
+            "Kính chúc Thầy/Cô luôn dồi dào sức khỏe, hạnh phúc và thành công trong sự nghiệp trồng người cao quý. Cảm ơn Thầy/Cô đã chắp cánh ước mơ cho chúng em! 🎁",
+            "Nhân ngày 20/11, chúng em xin gửi lời tri ân sâu sắc nhất đến những người lái đò thầm lặng. Chúc Thầy/Cô mãi là ngọn hải đăng dẫn lối cho các thế hệ học trò. ⛵️",
+            "Cảm ơn Thầy/Cô đã kiên nhẫn, tận tâm dạy dỗ và truyền đạt kiến thức. Kính chúc Thầy/Cô có một ngày Nhà giáo thật ấm áp và tràn đầy niềm vui. 🎉",
+            "Thầy/Cô không chỉ là người truyền đạt kiến thức mà còn là người thắp lên ngọn lửa đam mê. Chúc Thầy/Cô luôn vui vẻ, mạnh khỏe và đạt được mọi điều mình mong muốn. 🔥",
+            "Ơn dạy dỗ cao hơn núi Thái Sơn. Chúc Thầy/Cô có thật nhiều sức khỏe để tiếp tục đưa con thuyền tri thức cập bến thành công. ⛰️",
+            "Kính chúc Thầy/Cô có một ngày lễ trọn vẹn niềm vui và nhận được thật nhiều hoa cùng những lời chúc tốt đẹp nhất. ❤️",
+            "Chúng em xin hứa sẽ cố gắng học tập thật tốt để không phụ lòng mong mỏi của Thầy/Cô. Chúc mừng ngày Nhà giáo Việt Nam! 🌟"
+        ];
+
+        // Lấy các phần tử cần thiết
+        const cardContainer = document.getElementById('greetingCardContainer');
+        const clickHint = document.getElementById('clickHint');
+        const randomMessageElement = document.getElementById('randomMessage');
+        const doorLeft = document.getElementById('door-left');
+        const doorRight = document.getElementById('door-right');
+
+        // Hàm chọn lời chúc ngẫu nhiên
+        function getRandomMessage() {
+            const randomIndex = Math.floor(Math.random() * messages.length);
+            return messages[randomIndex];
+        }
+
+        // Hàm MỞ thiệp
+        function openCard() {
+            // 1. CHỌN VÀ CHÈN LỜI CHÚC NGẪU NHIÊN
+            randomMessageElement.innerHTML = getRandomMessage();
+
+            // 2. THỰC HIỆN MỞ THIỆP
+            cardContainer.classList.add('open');
+            clickHint.style.display = 'none';
+        }
+        
+        // Hàm ĐÓNG thiệp
+        function closeCard(event) {
+            event.stopPropagation(); 
+
+            cardContainer.classList.remove('open');
+            
+            setTimeout(() => {
+                clickHint.style.display = 'block';
+            }, 1000); 
+        }
+        
+        // Gán sự kiện click cho các cánh cửa (đảm bảo hàm openCard() được gọi)
+        doorLeft.addEventListener('click', openCard);
+        doorRight.addEventListener('click', openCard);
+        clickHint.addEventListener('click', openCard);
+    </script>
+
+</body>
+</html>
