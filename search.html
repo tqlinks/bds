@@ -7,7 +7,54 @@
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script> 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    // Thêm đoạn này vào đầu thẻ <script> của search.html
+
+const auth = firebase.auth();
+let isAdmin = false;
+
+auth.onAuthStateChanged(user => {
+    isAdmin = !!user; // true nếu có người dùng đăng nhập, false nếu là khách
+    searchProperties(); // Gọi lại để render lại danh sách với quyền phù hợp
     
+    // Tùy chọn: Hiện/Ẩn nút "Nhập Thông Tin Mới"
+    const inputLink = document.querySelector('a[href="input.html"]');
+    if (inputLink) {
+        inputLink.style.display = isAdmin ? 'inline-block' : 'none';
+    }
+});
+
+// Sửa hàm renderProperty(property) để kiểm tra isAdmin trước khi hiển thị nút:
+function renderProperty(property) {
+    // ... code render ...
+    
+    // PHẦN CẦN SỬA ĐỔI:
+    let actionsHtml = '';
+    if (isAdmin) {
+        actionsHtml = `
+            <button class="edit-details-btn" onclick="openDetailsModal('${property.id}')">Sửa TT</button>
+            <button class="delete-btn" onclick="deleteProperty('${property.id}')">Xóa</button>
+        `;
+    }
+    
+    listItem.innerHTML = `
+        <div class="property-actions">
+            ${actionsHtml}
+        </div>
+    `;
+    document.getElementById('results-list').appendChild(listItem);
+}
+
+// Thêm hàm logout() vào <script> của search.html để người dùng Admin có thể thoát
+function logout() {
+    auth.signOut().then(() => {
+        alert("Đã đăng xuất thành công.");
+        window.location.reload(); // Tải lại trang để trở thành user khách
+    }).catch(error => {
+        console.error("Lỗi đăng xuất:", error);
+    });
+}
+        
     <style>
         /* GIỮ NGUYÊN CSS TỪ CODE CŨ CỦA BẠN (HOẶC CHỈ CẦN CHỌN LỌC) */
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; color: #333; }
