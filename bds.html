@@ -587,76 +587,102 @@
 
     // Xử lý Form nộp dữ liệu (CREATE)
     document.getElementById('property-form').addEventListener('submit', function(e) {
-        e.preventDefault();
+        // =======================================================
+// 2. LOGIC XEM TRƯỚC VÀ NỘP DỮ LIỆU (PHẦN ĐÃ CHỈNH SỬA)
+// =======================================================
 
-        // Lấy giá trị form
-        const name = document.getElementById('name').value;
-        const phone = document.getElementById('phone').value;
-        const address = document.getElementById('address').value;
-        const price = parseFloat(document.getElementById('price').value);
-        const area = parseFloat(document.getElementById('area').value);
-        const direction = document.getElementById('direction').value;
-        const bedrooms = parseInt(document.getElementById('bedrooms').value);
-        const wc = parseInt(document.getElementById('wc').value);
-        const kitchens = parseInt(document.getElementById('kitchens').value);
-        const floors = parseInt(document.getElementById('floors').value);
-        const legal = document.getElementById('legal').value;
-        const loanable = document.getElementById('loanable').checked;
+// ... (các hàm previewImages, previewNewImages, và listeners vẫn giữ nguyên) ...
 
-        const imageFiles = document.getElementById('image-upload').files; 
+// Xử lý Form nộp dữ liệu (CREATE)
+document.getElementById('property-form').addEventListener('submit', function(e) {
+    e.preventDefault();
 
-        if (imageFiles.length === 0) {
-            alert('Vui lòng chọn ít nhất một hình ảnh.');
-            return;
-        }
+    // Lấy giá trị form và ÁP DỤNG LOGIC MẶC ĐỊNH
 
-        const imageBase64Array = []; 
-        let filesProcessed = 0;
-        
-        // Đọc từng file và lưu Base64
-        Array.from(imageFiles).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                imageBase64Array.push(event.target.result);
-                filesProcessed++;
+    const name = document.getElementById('name').value.trim() || "Chưa cập nhật";
+    const phone = document.getElementById('phone').value.trim() || "Chưa cập nhật";
+    const address = document.getElementById('address').value.trim() || "Chưa cập nhật";
+    
+    // Giá trị số (Number): Nếu trống (empty string), parseFloat sẽ trả về NaN, ta đặt nó thành null.
+    const priceValue = document.getElementById('price').value.trim();
+    const price = priceValue ? parseFloat(priceValue) : null; 
+    
+    const areaValue = document.getElementById('area').value.trim();
+    const area = areaValue ? parseFloat(areaValue) : null; 
 
-                if (filesProcessed === imageFiles.length) {
-                    const newProperty = {
-                        name: name,
-                        phone: phone,
-                        address: address,
-                        price: price,
-                        area: area,
-                        images: imageBase64Array, 
-                        
-                        direction: direction,
-                        bedrooms: bedrooms,
-                        wc: wc,
-                        kitchens: kitchens,
-                        floors: floors,
-                        legal: legal,
-                        loanable: loanable
-                    };
+    // Các trường select/option: Nếu giá trị là chuỗi rỗng (""), ta quy thành "Chưa cập nhật".
+    const direction = document.getElementById('direction').value || "Chưa cập nhật";
 
-                    // GỬI DỮ LIỆU LÊN FIREBASE
-                    propertiesRef.push(newProperty)
-                        .then(() => {
-                            alert('Đã lưu thông tin bất động sản thành công!');
-                            // Reset form và xóa ảnh xem trước
-                            document.getElementById('property-form').reset();
-                            document.getElementById('preview-area-images').innerHTML = ''; 
-                            // Firebase Listener sẽ tự động cập nhật danh sách
-                        })
-                        .catch(error => {
-                            console.error("Lỗi khi lưu vào Firebase: ", error);
-                            alert("Lỗi khi lưu dữ liệu. Vui lòng kiểm tra console.");
-                        });
-                }
-            };
-            reader.readAsDataURL(file);
-        });
+    const bedroomsValue = document.getElementById('bedrooms').value.trim();
+    const bedrooms = bedroomsValue ? parseInt(bedroomsValue) : null;
+    
+    const wcValue = document.getElementById('wc').value.trim();
+    const wc = wcValue ? parseInt(wcValue) : null;
+    
+    const kitchensValue = document.getElementById('kitchens').value.trim();
+    const kitchens = kitchensValue ? parseInt(kitchensValue) : null;
+    
+    const floorsValue = document.getElementById('floors').value.trim();
+    const floors = floorsValue ? parseInt(floorsValue) : null;
+
+    const legal = document.getElementById('legal').value || "Chưa cập nhật";
+    
+    // Checkbox (Boolean): Nếu không được chọn, giá trị mặc định là false (do cách lấy value.checked). Không cần thay đổi.
+    const loanable = document.getElementById('loanable').checked;
+
+    const imageFiles = document.getElementById('image-upload').files; 
+
+    // Yêu cầu tối thiểu: Bắt buộc phải có hình ảnh 
+    if (imageFiles.length === 0) {
+        alert('Vui lòng chọn ít nhất một hình ảnh.');
+        return;
+    }
+
+    const imageBase64Array = []; 
+    let filesProcessed = 0;
+    
+    // Đọc từng file và lưu Base64 (phần này giữ nguyên)
+    Array.from(imageFiles).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            imageBase64Array.push(event.target.result);
+            filesProcessed++;
+
+            if (filesProcessed === imageFiles.length) {
+                const newProperty = {
+                    name: name,
+                    phone: phone,
+                    address: address,
+                    price: price, // Có thể là null
+                    area: area,   // Có thể là null
+                    images: imageBase64Array, 
+                    
+                    direction: direction,
+                    bedrooms: bedrooms, // Có thể là null
+                    wc: wc,             // Có thể là null
+                    kitchens: kitchens, // Có thể là null
+                    floors: floors,     // Có thể là null
+                    legal: legal,
+                    loanable: loanable // false
+                };
+
+                // GỬI DỮ LIỆU LÊN FIREBASE (phần này giữ nguyên)
+                propertiesRef.push(newProperty)
+                    .then(() => {
+                        alert('Đã lưu thông tin bất động sản thành công!');
+                        // Reset form và xóa ảnh xem trước
+                        document.getElementById('property-form').reset();
+                        document.getElementById('preview-area-images').innerHTML = ''; 
+                    })
+                    .catch(error => {
+                        console.error("Lỗi khi lưu vào Firebase: ", error);
+                        alert("Lỗi khi lưu dữ liệu. Vui lòng kiểm tra console.");
+                    });
+            }
+        };
+        reader.readAsDataURL(file);
     });
-
+});
     // =======================================================
     // 3. LOGIC XÓA & CẬP NHẬT ẢNH (UPDATE/DELETE)
     // =======================================================
@@ -931,3 +957,4 @@
 </script>
 </body>
 </html>
+
