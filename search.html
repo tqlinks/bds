@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tìm Kiếm và Quản Lý Bất Động Sản</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <style>
+        /* GIỮ NGUYÊN CSS TỪ CODE CŨ CỦA BẠN (HOẶC CHỈ CẦN CHỌN LỌC) */
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; color: #333; }
+        .container { max-width: 1200px; margin: auto; }
+        .column { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        h2 { color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
+        /* CSS cho filter group */
+        .filter-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+        .filter-item { flex: 1; min-width: 150px; }
+        .filter-item label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .filter-item input[type="text"], .filter-item input[type="number"], .filter-item select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .filter-item-checkbox { align-self: flex-end; padding-bottom: 5px; }
+        .form-group-checkbox { display: flex; align-items: center; gap: 10px; height: 40px; margin-top: 25px; }
+        /* CSS cho danh sách và item */
+        .property-item { border: 1px solid #ddd; border-radius: 4px; margin-bottom: 15px; padding: 15px; display: flex; gap: 15px; align-items: flex-start; background-color: #fafafa; position: relative; }
+        .property-actions { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .property-images { display: flex; gap: 5px; flex-wrap: wrap; max-width: 150px; cursor: pointer; border: 1px solid #ccc; padding: 5px; border-radius: 4px; margin-top: 5px; }
+        .property-images img { max-width: 100%; height: 70px; width: auto; border-radius: 4px; object-fit: cover; }
+        .property-details-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px 10px; margin-top: 10px; font-size: 0.9em; }
+        /* CSS cho buttons */
+        .delete-btn { background-color: #dc3545; padding: 5px 10px; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; }
+        .update-img-btn { background-color: #007bff; padding: 5px 10px; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; }
+        .edit-details-btn { background-color: #ffc107; color: #333; padding: 5px 10px; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; }
+        /* CSS cho Modal (Giữ nguyên từ code cũ) */
+        .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); align-items: center; justify-content: center; }
+        .modal-content { background-color: #fefefe; padding: 20px; border-radius: 8px; width: 90%; max-width: 900px; position: relative; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); max-height: 90vh; overflow-y: auto; }
+        .modal-close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; position: absolute; top: 10px; right: 20px; z-index: 1001; background: rgba(255, 255, 255, 0.5); border-radius: 50%; padding: 0 8px; }
+        .current-images-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 10px; }
+        .image-wrapper { position: relative; overflow: hidden; border-radius: 4px; }
+        .image-wrapper img { width: 100%; height: 120px; object-fit: cover; display: block; }
+        .delete-image-btn { position: absolute; top: 5px; right: 5px; background: rgba(255, 0, 0, 0.8); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 14px; line-height: 1; text-align: center; padding: 0; }
+        .new-images-preview { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .new-images-preview img { max-width: 80px; height: 80px; object-fit: cover; border: 1px solid #007bff; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="column">
+        <a href="input.html" style="float: right; text-decoration: none; background-color: #28a745; color: white; padding: 10px 15px; border-radius: 4px;">
+            ➕ Nhập Thông Tin Mới
+        </a>
+
+        <h2>🔍 Tìm Kiếm Chi Tiết</h2>
+        <div class="filter-group">
+            <div class="filter-item">
+                <label for="filter-name">Tên / Tiêu đề:</label>
+                <input type="text" id="filter-name" placeholder="Tìm kiếm theo Tên..." onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-phone">Số điện thoại:</label>
+                <input type="text" id="filter-phone" placeholder="Tìm kiếm theo SĐT..." onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-address">Địa chỉ:</label>
+                <input type="text" id="filter-address" placeholder="Tìm kiếm theo Địa chỉ..." onkeyup="searchProperties()">
+            </div>
+        </div>
+        
+        <div class="filter-group">
+            <div class="filter-item">
+                <label for="filter-price-min">Giá min (tỷ VNĐ):</label>
+                <input type="number" id="filter-price-min" step="0.01" placeholder="Min Giá..." onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-price-max">Giá max (tỷ VNĐ):</label>
+                <input type="number" id="filter-price-max" step="0.01" placeholder="Max Giá..." onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-area-min">Diện tích min (m²):</label>
+                <input type="number" id="filter-area-min" step="0.1" placeholder="Min Diện tích..." onkeyup="searchProperties()">
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-item">
+                <label for="filter-direction">Hướng Nhà:</label>
+                <select id="filter-direction" onchange="searchProperties()">
+                    <option value="">Tất cả</option>
+                    <option value="Đông">Đông</option>
+                    <option value="Tây">Tây</option>
+                    <option value="Nam">Nam</option>
+                    <option value="Bắc">Bắc</option>
+                    <option value="Đông-Bắc">Đông-Bắc</option>
+                    <option value="Đông-Nam">Đông-Nam</option>
+                    <option value="Tây-Bắc">Tây-Bắc</option>
+                    <option value="Tây-Nam">Tây-Nam</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label for="filter-legal">Tình trạng Sổ:</label>
+                <select id="filter-legal" onchange="searchProperties()">
+                    <option value="">Tất cả</option>
+                    <option value="Sổ Hồng">Sổ Hồng</option>
+                    <option value="Sổ Đỏ">Sổ Đỏ</option>
+                    <option value="Hợp Đồng Mua Bán">Hợp Đồng Mua Bán</option>
+                    <option value="Chưa có Sổ">Chưa có Sổ</option>
+                </select>
+            </div>
+            <div class="filter-item filter-item-checkbox">
+                <div class="form-group-checkbox">
+                    <input type="checkbox" id="filter-loanable" onchange="searchProperties()">
+                    <label for="filter-loanable">Chỉ hiện BĐS có thể vay</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-item">
+                <label for="filter-bedrooms-min">PN tối thiểu:</label>
+                <input type="number" id="filter-bedrooms-min" min="0" placeholder="Min PN" onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-wc-min">WC tối thiểu:</label>
+                <input type="number" id="filter-wc-min" min="0" placeholder="Min WC" onkeyup="searchProperties()">
+            </div>
+            <div class="filter-item">
+                <label for="filter-floors-min">Lầu tối thiểu:</label>
+                <input type="number" id="filter-floors-min" min="0" placeholder="Min Lầu" onkeyup="searchProperties()">
+            </div>
+        </div>
+
+        <h3>Danh sách Kết quả</h3>
+        <ul id="results-list">
+        </ul>
+    </div>
+</div>
+
+<div id="imageModal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal('imageModal')">&times;</span>
+        <h3 id="modal-title">Cập nhật Hình ảnh</h3>
+        
+        <input type="hidden" id="current-property-id">
+
+        <h4>Ảnh Hiện Tại (Bấm X để xóa)</h4>
+        <div id="modal-gallery" class="current-images-grid">
+            </div>
+
+        <h4 style="margin-top: 20px;">Thêm Ảnh Mới</h4>
+        <div class="form-group-inline">
+            <div class="inline-item">
+                <input type="file" id="update-image-upload" accept="image/*" multiple>
+            </div>
+        </div>
+        
+        <div class="new-images-preview" id="new-images-preview">
+             </div>
+
+        <button onclick="saveUpdatedImages()" style="margin-top: 15px; width: 100%;">Lưu Cập Nhật Ảnh</button>
+    </div>
+</div>
+
+<div id="detailsModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 600px;">
+        <span class="modal-close" onclick="closeModal('detailsModal')">&times;</span>
+        <h3 style="color: #ffc107;">✏️ Sửa Thông Tin Chi Tiết</h3>
+        
+        <input type="hidden" id="edit-property-id">
+
+        <form onsubmit="event.preventDefault(); savePropertyDetails();">
+            <div class="form-group">
+                <label for="edit-name">Tên / Tiêu đề:</label>
+                <input type="text" id="edit-name" placeholder="Tiêu đề">
+            </div>
+            <div class="form-group-inline">
+                <div class="inline-item">
+                    <label for="edit-price">Giá (tỷ):</label>
+                    <input type="number" id="edit-price" step="0.01" placeholder="Giá">
+                </div>
+                <div class="inline-item">
+                    <label for="edit-area">Diện tích (m²):</label>
+                    <input type="number" id="edit-area" step="0.1" placeholder="Diện tích">
+                </div>
+            </div>
+            <div class="form-group-inline">
+                <div class="inline-item">
+                    <label for="edit-direction">Hướng Nhà:</label>
+                    <select id="edit-direction">
+                        <option value="">Chọn Hướng</option>
+                        <option value="Đông">Đông</option>
+                        <option value="Tây">Tây</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Bắc">Bắc</option>
+                        <option value="Đông-Bắc">Đông-Bắc</option>
+                        <option value="Đông-Nam">Đông-Nam</option>
+                        <option value="Tây-Bắc">Tây-Bắc</option>
+                        <option value="Tây-Nam">Tây-Nam</option>
+                    </select>
+                </div>
+                <div class="inline-item">
+                    <label for="edit-legal">Tình trạng Sổ:</label>
+                    <select id="edit-legal">
+                        <option value="">Chọn Tình trạng</option>
+                        <option value="Sổ Hồng">Sổ Hồng</option>
+                        <option value="Sổ Đỏ">Sổ Đỏ</option>
+                        <option value="Hợp Đồng Mua Bán">Hợp Đồng Mua Bán</option>
+                        <option value="Chưa có Sổ">Chưa có Sổ</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group-inline">
+                <div class="inline-item">
+                    <label for="edit-bedrooms">Số PN:</label>
+                    <input type="number" id="edit-bedrooms" min="0" placeholder="PN">
+                </div>
+                <div class="inline-item">
+                    <label for="edit-wc">Số WC:</label>
+                    <input type="number" id="edit-wc" min="0" placeholder="WC">
+                </div>
+                <div class="inline-item">
+                    <label for="edit-floors">Số Lầu:</label>
+                    <input type="number" id="edit-floors" min="0" placeholder="Lầu">
+                </div>
+            </div>
+            <div class="form-group-inline">
+                 <div class="inline-item">
+                    <label for="edit-address">Địa chỉ:</label>
+                    <input type="text" id="edit-address" placeholder="Địa chỉ">
+                </div>
+                <div class="inline-item">
+                    <label for="edit-phone">Số điện thoại:</label>
+                    <input type="text" id="edit-phone" placeholder="SĐT">
+                </div>
+            </div>
+            <div class="form-group-checkbox">
+                <input type="checkbox" id="edit-loanable">
+                <label for="edit-loanable" style="margin-bottom: 0;">Có thể vay thêm</label>
+            </div>
+            
+            <button type="submit" style="margin-top: 15px; width: 100%; background-color: #007bff;">Lưu Thông Tin Cập Nhật</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // GIỮ NGUYÊN TOÀN BỘ PHẦN KHỞI TẠO FIREBASE, CLOUDINARY CONFIG VÀ TẤT CẢ CÁC HÀM CÒN LẠI
+    
+    // =======================================================
+    // 1. KHỞI TẠO FIREBASE & CẤU HÌNH CLOUDINARY
+    // =======================================================
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBBFhxxkIZSguuMV5AZzhLSWa19LYXMOY8",
+      authDomain: "bdss-1f754.firebaseapp.com",
+      projectId: "bdss-1f754",
+      storageBucket: "bdss-1f754.firebasestorage.app",
+      messagingSenderId: "1081373432468",
+      appId: "1:1081373432468:web:f38cab72330d75de67b281"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    const db = firebase.firestore();
+    const propertiesRef = db.collection('properties'); 
+
+    // ***************************************************************
+    // CẤU HÌNH CLOUDINARY (CẦN CHO CHỨC NĂNG CẬP NHẬT ẢNH)
+    const CLOUDINARY_CLOUD_NAME = 'djngpyafe'; 
+    const CLOUDINARY_UPLOAD_PRESET = 'bdstx'; 
+    const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+    // ***************************************************************
+
+    let properties = []; 
+    let newImageFiles = []; 
+
+    // =======================================================
+    // 2. LOGIC TẢI ẢNH LÊN CLOUDINARY (CẦN CHO CẬP NHẬT ẢNH)
+    // =======================================================
+
+    // Hàm xem trước ảnh mới trong Modal (bị cắt trong code cũ của bạn)
+    function previewNewImages(event) {
+        const fileInput = event.target;
+        newImageFiles = Array.from(fileInput.files);
+        const previewContainer = document.getElementById('new-images-preview');
+        previewContainer.innerHTML = ''; 
+
+        if (newImageFiles.length === 0) return;
+
+        newImageFiles.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.alt = file.name;
+                previewContainer.appendChild(img);
+            };
+            reader.readAsDataURL(file); 
+        });
+    }
+
+    document.getElementById('update-image-upload').addEventListener('change', previewNewImages);
+    
+    // HÀM Tải hình ảnh lên Cloudinary (DÙNG CHO CẬP NHẬT ẢNH)
+    async function uploadImagesToCloudinary(files) {
+        if (!CLOUDINARY_CLOUD_NAME || CLOUDINARY_CLOUD_NAME === 'YOUR_CLOUD_NAME') {
+            throw new Error("Vui lòng cấu hình CLOUDINARY_CLOUD_NAME và CLOUDINARY_UPLOAD_PRESET.");
+        }
+
+        const uploadPromises = [];
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET); 
+
+            const promise = fetch(CLOUDINARY_UPLOAD_URL, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(`Cloudinary upload failed: ${response.statusText} - ${errorData.error.message}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                return data.secure_url; 
+            });
+            
+            uploadPromises.push(promise);
+        }
+
+        return Promise.all(uploadPromises);
+    }
+
+    // =======================================================
+    // 3. LOGIC XÓA & CẬP NHẬT ẢNH (UPDATE/DELETE IMAGES)
+    // =======================================================
+    
+    // Hàm XÓA BẤT ĐỘNG SẢN HOÀN TOÀN
+    function deleteProperty(propertyId) {
+        if (!confirm('Bạn có chắc chắn muốn XÓA VĨNH VIỄN bất động sản này không?')) return;
+        
+        propertiesRef.doc(propertyId).delete()
+            .then(() => alert('Đã xóa bất động sản thành công!'))
+            .catch(error => {
+                console.error("Lỗi khi xóa: ", error);
+                alert("Lỗi khi xóa dữ liệu. Vui lòng kiểm tra console.");
+            });
+    }
+
+    // Hàm xóa ảnh cũ trong Modal (CHỈ XÓA URL KHỎI FIRESTORE)
+    async function deleteImage(propertyId, imageUrl) {
+        if (!confirm('Bạn có chắc chắn muốn xóa hình ảnh này không? (Ảnh sẽ vẫn còn trên Cloudinary)')) return;
+
+        const propertyIndex = properties.findIndex(p => p.id === propertyId);
+        if (propertyIndex === -1) return;
+
+        try {
+            properties[propertyIndex].images = properties[propertyIndex].images.filter(img => img !== imageUrl);
+            
+            await propertiesRef.doc(propertyId).update({
+                images: properties[propertyIndex].images
+            });
+
+            openImageModal(propertyId); // Cập nhật lại giao diện Modal
+        } catch (error) {
+            console.error("Lỗi khi xóa ảnh: ", error);
+            alert("Lỗi khi xóa ảnh. Vui lòng kiểm tra console.");
+        }
+    }
+
+    // Hàm lưu cập nhật ảnh (từ Modal)
+    async function saveUpdatedImages() {
+        const propertyId = document.getElementById('current-property-id').value; 
+        const propertyIndex = properties.findIndex(p => p.id === propertyId);
+        if (propertyIndex === -1 || newImageFiles.length === 0) {
+            if (newImageFiles.length === 0) alert('Không có ảnh mới nào được chọn.');
+            return;
+        }
+
+        try {
+            const newImageUrls = await uploadImagesToCloudinary(newImageFiles); 
+            
+            const currentImages = properties[propertyIndex].images || [];
+            const updatedImages = [...currentImages, ...newImageUrls];
+            
+            await propertiesRef.doc(propertyId).update({
+                images: updatedImages
+            });
+            
+            alert('Đã cập nhật hình ảnh thành công!');
+            closeModal('imageModal');
+            newImageFiles = []; // Reset
+        } catch (error) {
+            console.error("Lỗi khi cập nhật ảnh lên Cloudinary: ", error);
+            alert("Lỗi khi cập nhật ảnh. Vui lòng kiểm tra console.");
+        }
+    }
+    
+    // =======================================================
+    // 4. LOGIC HIỂN THỊ & CẬP NHẬT CHI TIẾT
+    // =======================================================
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    // Hàm mở Modal Cập nhật Ảnh
+    function openImageModal(propertyId) {
+        const property = properties.find(p => p.id === propertyId);
+        if (!property) return;
+        
+        document.getElementById('current-property-id').value = propertyId;
+        document.getElementById('modal-title').textContent = `Cập nhật ảnh cho: ${property.name}`;
+        
+        const gallery = document.getElementById('modal-gallery');
+        gallery.innerHTML = ''; 
+
+        (property.images || []).forEach(url => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'image-wrapper';
+            wrapper.innerHTML = `
+                <img src="${url}" alt="Ảnh BĐS">
+                <button class="delete-image-btn" onclick="deleteImage('${propertyId}', '${url}')">X</button>
+            `;
+            gallery.appendChild(wrapper);
+        });
+        
+        document.getElementById('update-image-upload').value = null;
+        document.getElementById('new-images-preview').innerHTML = '';
+        newImageFiles = [];
+
+        document.getElementById('imageModal').style.display = 'flex';
+    }
+
+    // Hàm mở Modal Cập nhật Chi tiết
+    function openDetailsModal(propertyId) {
+        const property = properties.find(p => p.id === propertyId);
+        if (!property) return;
+
+        document.getElementById('edit-property-id').value = propertyId;
+        
+        document.getElementById('edit-name').value = property.name !== "Chưa cập nhật" ? property.name : '';
+        document.getElementById('edit-phone').value = property.phone !== "Chưa cập nhật" ? property.phone : '';
+        document.getElementById('edit-address').value = property.address !== "Chưa cập nhật" ? property.address : '';
+        document.getElementById('edit-price').value = property.price !== null ? property.price : '';
+        document.getElementById('edit-area').value = property.area !== null ? property.area : '';
+        document.getElementById('edit-bedrooms').value = property.bedrooms !== null ? property.bedrooms : '';
+        document.getElementById('edit-wc').value = property.wc !== null ? property.wc : '';
+        document.getElementById('edit-kitchens').value = property.kitchens !== null ? property.kitchens : '';
+        document.getElementById('edit-floors').value = property.floors !== null ? property.floors : '';
+        document.getElementById('edit-direction').value = property.direction !== "Chưa cập nhật" ? property.direction : '';
+        document.getElementById('edit-legal').value = property.legal !== "Chưa cập nhật" ? property.legal : '';
+        document.getElementById('edit-loanable').checked = property.loanable;
+        
+        document.getElementById('detailsModal').style.display = 'flex';
+    }
+
+    // Hàm lưu cập nhật chi tiết (UPDATE)
+    async function savePropertyDetails() {
+        const propertyId = document.getElementById('edit-property-id').value; 
+        
+        const updatedData = {
+            name: document.getElementById('edit-name').value.trim() || "Chưa cập nhật",
+            phone: document.getElementById('edit-phone').value.trim() || "Chưa cập nhật",
+            address: document.getElementById('edit-address').value.trim() || "Chưa cập nhật",
+            price: parseFloat(document.getElementById('edit-price').value.trim()) || null, 
+            area: parseFloat(document.getElementById('edit-area').value.trim()) || null, 
+            direction: document.getElementById('edit-direction').value || "Chưa cập nhật",
+            bedrooms: parseInt(document.getElementById('edit-bedrooms').value.trim()) || null,
+            wc: parseInt(document.getElementById('edit-wc').value.trim()) || null,
+            kitchens: parseInt(document.getElementById('edit-kitchens').value.trim()) || null,
+            floors: parseInt(document.getElementById('edit-floors').value.trim()) || null,
+            legal: document.getElementById('edit-legal').value || "Chưa cập nhật",
+            loanable: document.getElementById('edit-loanable').checked,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        try {
+            await propertiesRef.doc(propertyId).update(updatedData);
+            alert('Đã cập nhật thông tin chi tiết thành công!');
+            closeModal('detailsModal');
+        } catch (error) {
+            console.error("Lỗi khi cập nhật chi tiết: ", error);
+            alert("Lỗi khi cập nhật chi tiết. Vui lòng kiểm tra console.");
+        }
+    }
+    
+    // =======================================================
+    // 5. LOGIC HIỂN THỊ VÀ TÌM KIẾM
+    // =======================================================
+
+    // Hàm hiển thị danh sách (renderProperty)
+    function renderProperty(property) {
+        // ... (Giữ nguyên hàm renderProperty) ...
+        const listItem = document.createElement('li');
+        listItem.className = 'property-item';
+        
+        // Chọn tối đa 3 ảnh để hiển thị trong list
+        const imagesHtml = (property.images || [])
+            .slice(0, 3) 
+            .map(url => `<img src="${url}" alt="Ảnh BĐS">`)
+            .join('');
+
+        // Hàm format giá
+        const formatPrice = (p) => p !== null ? `${p.toLocaleString('vi-VN')} tỷ VNĐ` : 'Chưa cập nhật';
+        const formatArea = (a) => a !== null ? `${a.toLocaleString('vi-VN')} m²` : 'Chưa cập nhật';
+        
+        listItem.innerHTML = `
+            <div class="property-content" style="flex: 1;">
+                <h4 style="margin-top: 0; color: #0056b3;">${property.name} - ${formatPrice(property.price)}</h4>
+                <div class="property-details-grid">
+                    <span><strong>Diện tích:</strong> ${formatArea(property.area)}</span>
+                    <span><strong>PN/WC/Lầu:</strong> ${property.bedrooms || 0}/${property.wc || 0}/${property.floors || 0}</span>
+                    <span><strong>Hướng:</strong> ${property.direction}</span>
+                    <span><strong>Địa chỉ:</strong> ${property.address}</span>
+                    <span><strong>SĐT:</strong> ${property.phone}</span>
+                    <span><strong>Sổ:</strong> ${property.legal} (${property.loanable ? 'Có thể vay' : 'Không vay được'})</span>
+                </div>
+            </div>
+            
+            <div class="property-images" onclick="openImageModal('${property.id}')" title="Bấm để xem & cập nhật ảnh">
+                ${imagesHtml}
+            </div>
+
+            <div class="property-actions">
+                <button class="edit-details-btn" onclick="openDetailsModal('${property.id}')">Sửa TT</button>
+                <button class="delete-btn" onclick="deleteProperty('${property.id}')">Xóa</button>
+            </div>
+        `;
+        document.getElementById('results-list').appendChild(listItem);
+    }
+    
+    // Hàm tìm kiếm và lọc (searchProperties)
+    function searchProperties() {
+        // ... (Giữ nguyên logic lọc dữ liệu) ...
+        const filterName = document.getElementById('filter-name').value.toLowerCase();
+        const filterPhone = document.getElementById('filter-phone').value.toLowerCase();
+        const filterAddress = document.getElementById('filter-address').value.toLowerCase();
+        const filterPriceMin = parseFloat(document.getElementById('filter-price-min').value) || 0;
+        const filterPriceMax = parseFloat(document.getElementById('filter-price-max').value) || Infinity;
+        const filterAreaMin = parseFloat(document.getElementById('filter-area-min').value) || 0;
+        const filterDirection = document.getElementById('filter-direction').value;
+        const filterLegal = document.getElementById('filter-legal').value;
+        const filterLoanable = document.getElementById('filter-loanable').checked;
+        const filterBedroomsMin = parseInt(document.getElementById('filter-bedrooms-min').value) || 0;
+        const filterWcMin = parseInt(document.getElementById('filter-wc-min').value) || 0;
+        const filterFloorsMin = parseInt(document.getElementById('filter-floors-min').value) || 0;
+
+        const filteredProperties = properties.filter(p => {
+            const price = p.price || 0;
+            const area = p.area || 0;
+            const bedrooms = p.bedrooms || 0;
+            const wc = p.wc || 0;
+            const floors = p.floors || 0;
+
+            if (filterName && !p.name.toLowerCase().includes(filterName)) return false;
+            if (filterPhone && !p.phone.toLowerCase().includes(filterPhone)) return false;
+            if (filterAddress && !p.address.toLowerCase().includes(filterAddress)) return false;
+
+            if (price < filterPriceMin || price > filterPriceMax) return false;
+            if (area < filterAreaMin) return false;
+
+            if (filterDirection && p.direction !== filterDirection) return false;
+            if (filterLegal && p.legal !== filterLegal) return false;
+            if (filterLoanable && !p.loanable) return false;
+
+            if (bedrooms < filterBedroomsMin) return false;
+            if (wc < filterWcMin) return false;
+            if (floors < filterFloorsMin) return false;
+
+            return true;
+        });
+
+        const resultsList = document.getElementById('results-list');
+        resultsList.innerHTML = '';
+        if (filteredProperties.length === 0) {
+            resultsList.innerHTML = '<li style="list-style: none; color: #dc3545;">Không tìm thấy bất động sản nào phù hợp.</li>';
+        } else {
+            filteredProperties.forEach(renderProperty);
+        }
+    }
+
+    // Lắng nghe thay đổi từ Firestore (READ)
+    propertiesRef.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+        properties = [];
+        snapshot.docs.forEach(doc => {
+            properties.push({ id: doc.id, ...doc.data() });
+        });
+        searchProperties(); // Cập nhật lại danh sách sau khi dữ liệu thay đổi
+    }, error => {
+        console.error("Lỗi khi lắng nghe Firestore (Kiểm tra Rules): ", error); // Lỗi Missing or insufficient permissions
+        document.getElementById('results-list').innerHTML = '<li style="list-style: none; color: red;">LỖI: Không thể tải dữ liệu. Vui lòng kiểm tra Firebase Security Rules.</li>';
+    });
+</script>
+
+</body>
+</html>
