@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhập Thông Tin Bất Động Sản</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <style>
+        /* GIỮ NGUYÊN CSS TỪ CODE CŨ CỦA BẠN (HOẶC CHỈ CẦN CHỌN LỌC) */
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; color: #333; }
+        .container { max-width: 800px; margin: auto; }
+        .column { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        h2 { color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input[type="text"], .form-group input[type="number"], .form-group input[type="file"], .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .form-group-inline { display: flex; gap: 15px; margin-bottom: 15px; }
+        .form-group-inline .inline-item { flex: 1; }
+        .form-group-checkbox { display: flex; align-items: center; gap: 10px; height: 40px; margin-top: 25px; }
+        button { background-color: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; min-width: 80px; }
+        button:hover { background-color: #218838; }
+        #preview-area-images { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        #preview-area-images img { max-width: 100px; height: auto; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="column">
+        <a href="search.html" style="float: right; text-decoration: none; background-color: #007bff; color: white; padding: 10px 15px; border-radius: 4px;">
+            🔍 Xem Danh Sách & Tìm Kiếm
+        </a>
+
+        <h2>➕ Nhập Thông Tin Bất Động Sản</h2>
+        <form id="property-form">
+            <div class="form-group">
+                <label for="name">Tên / Tiêu đề:</label>
+                <input type="text" id="name" placeholder="Ví dụ: Căn hộ cao cấp Quận 1">
+            </div>
+            <div class="form-group">
+                <label for="phone">Số điện thoại:</label>
+                <input type="text" id="phone" placeholder="090...">
+            </div>
+            <div class="form-group">
+                <label for="address">Địa chỉ:</label>
+                <input type="text" id="address" placeholder="123 Đường ABC, Phường X, Quận Y">
+            </div>
+            
+            <div class="form-group-inline">
+                <div class="inline-item">
+                    <label for="price">Giá (VNĐ/tỷ):</label>
+                    <input type="number" id="price" step="0.01" placeholder="Ví dụ: 3.5 (tỷ)">
+                </div>
+                <div class="inline-item">
+                    <label for="area">Diện tích (m²):</label>
+                    <input type="number" id="area" step="0.1" placeholder="Ví dụ: 80.5">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="direction">Hướng Nhà:</label>
+                <select id="direction">
+                    <option value="">Chọn Hướng</option>
+                    <option value="Đông">Đông</option>
+                    <option value="Tây">Tây</option>
+                    <option value="Nam">Nam</option>
+                    <option value="Bắc">Bắc</option>
+                    <option value="Đông-Bắc">Đông-Bắc</option>
+                    <option value="Đông-Nam">Đông-Nam</option>
+                    <option value="Tây-Bắc">Tây-Bắc</option>
+                    <option value="Tây-Nam">Tây-Nam</option>
+                </select>
+            </div>
+            
+            <div class="form-group-inline">
+                <div class="inline-item">
+                    <label for="bedrooms">Số PN:</label>
+                    <input type="number" id="bedrooms" min="0" placeholder="Phòng ngủ">
+                </div>
+                <div class="inline-item">
+                    <label for="wc">Số WC:</label>
+                    <input type="number" id="wc" min="0" placeholder="Phòng WC">
+                </div>
+                <div class="inline-item">
+                    <label for="kitchens">Số Bếp:</label>
+                    <input type="number" id="kitchens" min="0" placeholder="Bếp">
+                </div>
+                <div class="inline-item">
+                    <label for="floors">Số Lầu:</label>
+                    <input type="number" id="floors" min="0" placeholder="Số tầng">
+                </div>
+            </div>
+
+            <div class="form-group-inline">
+                <div class="inline-item">
+                    <label for="legal">Tình trạng Sổ:</label>
+                    <select id="legal">
+                        <option value="">Chọn Tình trạng</option>
+                        <option value="Sổ Hồng">Sổ Hồng</option>
+                        <option value="Sổ Đỏ">Sổ Đỏ</option>
+                        <option value="Hợp Đồng Mua Bán">Hợp Đồng Mua Bán</option>
+                        <option value="Chưa có Sổ">Chưa có Sổ</option>
+                    </select>
+                </div>
+                <div class="inline-item">
+                    <div class="form-group-checkbox">
+                        <input type="checkbox" id="loanable">
+                        <label for="loanable" style="margin-bottom: 0;">Có thể vay thêm</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="image-upload">Hình ảnh (Có thể chọn nhiều):</label>
+                <input type="file" id="image-upload" accept="image/*" multiple required>
+            </div>
+            
+            <div class="form-group" id="preview-area">
+                <label>Xem trước ảnh đã chọn:</label>
+                <div id="preview-area-images"></div>
+            </div>
+            
+            <button type="submit">Lưu Thông Tin</button>
+
+        </form>
+        <p style="margin-top: 15px; font-size: 0.9em; color: #6c757d;">*Dữ liệu được lưu trữ trên Cloud Firestore.</p>
+    </div>
+</div>
+
+<script>
+    // GIỮ NGUYÊN TOÀN BỘ PHẦN KHỞI TẠO FIREBASE, CLOUDINARY CONFIG, VÀ HÀM LIÊN QUAN ĐẾN TẠO MỚI (CREATE)
+    // Tức là toàn bộ script từ dòng 419 đến hết hàm propertyFormSubmit(e)
+    
+    // =======================================================
+    // 1. KHỞI TẠO FIREBASE & CẤU HÌNH CLOUDINARY
+    // =======================================================
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBBFhxxkIZSguuMV5AZzhLSWa19LYXMOY8",
+      authDomain: "bdss-1f754.firebaseapp.com",
+      projectId: "bdss-1f754",
+      storageBucket: "bdss-1f754.firebasestorage.app",
+      messagingSenderId: "1081373432468",
+      appId: "1:1081373432468:web:f38cab72330d75de67b281"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    const db = firebase.firestore();
+    const propertiesRef = db.collection('properties'); 
+
+    // ***************************************************************
+    // CẤU HÌNH CLOUDINARY (ĐÃ SỬA LỖI URL VÀ BẢO MẬT)
+    const CLOUDINARY_CLOUD_NAME = 'djngpyafe'; 
+    const CLOUDINARY_UPLOAD_PRESET = 'bdstx'; // Đảm bảo đã là Unsigned trên Console
+    const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+    // ***************************************************************
+
+    // =======================================================
+    // 2. LOGIC XEM TRƯỚC & NỘP DỮ LIỆU (CREATE)
+    // =======================================================
+    
+    // Hàm xem trước ảnh form tạo mới
+    function previewImages() {
+        const fileInput = document.getElementById('image-upload');
+        const previewContainer = document.getElementById('preview-area-images');
+        previewContainer.innerHTML = ''; 
+        const files = Array.from(fileInput.files);
+
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.alt = file.name;
+                previewContainer.appendChild(img);
+            };
+            reader.readAsDataURL(file); 
+        });
+    }
+
+    document.getElementById('image-upload').addEventListener('change', previewImages);
+
+    // HÀM MỚI: Tải hình ảnh lên Cloudinary
+    async function uploadImagesToCloudinary(files) {
+        if (!CLOUDINARY_CLOUD_NAME || CLOUDINARY_CLOUD_NAME === 'YOUR_CLOUD_NAME') {
+            throw new Error("Vui lòng cấu hình CLOUDINARY_CLOUD_NAME và CLOUDINARY_UPLOAD_PRESET.");
+        }
+
+        const uploadPromises = [];
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET); 
+
+            const promise = fetch(CLOUDINARY_UPLOAD_URL, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // Cải thiện thông báo lỗi Bad Request (400)
+                    return response.json().then(errorData => {
+                        throw new Error(`Cloudinary upload failed: ${response.statusText} - ${errorData.error.message}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                return data.secure_url; 
+            });
+            
+            uploadPromises.push(promise);
+        }
+
+        return Promise.all(uploadPromises);
+    }
+    
+
+    // Xử lý Form nộp dữ liệu (CREATE - SỬ DỤNG CLOUDINARY)
+    async function propertyFormSubmit(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('name').value.trim() || "Chưa cập nhật";
+        const phone = document.getElementById('phone').value.trim() || "Chưa cập nhật";
+        const address = document.getElementById('address').value.trim() || "Chưa cập nhật";
+        const priceValue = document.getElementById('price').value.trim();
+        const price = priceValue ? parseFloat(priceValue) : null; 
+        const areaValue = document.getElementById('area').value.trim();
+        const area = areaValue ? parseFloat(areaValue) : null; 
+        const direction = document.getElementById('direction').value || "Chưa cập nhật";
+        const bedroomsValue = document.getElementById('bedrooms').value.trim();
+        const bedrooms = bedroomsValue ? parseInt(bedroomsValue) : null;
+        const wcValue = document.getElementById('wc').value.trim();
+        const wc = wcValue ? parseInt(wcValue) : null;
+        const kitchensValue = document.getElementById('kitchens').value.trim();
+        const kitchens = kitchensValue ? parseInt(kitchensValue) : null;
+        const floorsValue = document.getElementById('floors').value.trim();
+        const floors = floorsValue ? parseInt(floorsValue) : null;
+        const legal = document.getElementById('legal').value || "Chưa cập nhật";
+        const loanable = document.getElementById('loanable').checked;
+
+        const imageFiles = document.getElementById('image-upload').files; 
+
+        if (imageFiles.length === 0) {
+            alert('Vui lòng chọn ít nhất một hình ảnh.');
+            return;
+        }
+
+        try {
+            // TẢI ẢNH LÊN CLOUDINARY
+            const imageUrls = await uploadImagesToCloudinary(imageFiles); 
+            
+            const newProperty = {
+                name, phone, address, price, area, direction, bedrooms, wc, kitchens, floors, legal, loanable,
+                images: imageUrls, 
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            await propertiesRef.add(newProperty);
+
+            alert('Đã lưu thông tin bất động sản thành công!');
+            document.getElementById('property-form').reset();
+            document.getElementById('preview-area-images').innerHTML = ''; 
+        } catch (error) {
+            console.error("Lỗi khi lưu dữ liệu hoặc tải ảnh lên Cloudinary: ", error);
+            alert("Lỗi khi lưu dữ liệu. Vui lòng kiểm tra console và cấu hình Cloudinary.");
+        }
+    }
+
+    document.getElementById('property-form').addEventListener('submit', propertyFormSubmit);
+
+</script>
+
+</body>
+</html>
