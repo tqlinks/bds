@@ -6,10 +6,11 @@
     <title>Nhập Thông Tin Bất Động Sản</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script> 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    
     <style>
-        /* GIỮ NGUYÊN CSS TỪ CODE CŨ CỦA BẠN (HOẶC CHỈ CẦN CHỌN LỌC) */
+        /* CSS CƠ BẢN */
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; color: #333; }
         .container { max-width: 800px; margin: auto; }
         .column { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
@@ -20,21 +21,25 @@
         .form-group-inline { display: flex; gap: 15px; margin-bottom: 15px; }
         .form-group-inline .inline-item { flex: 1; }
         .form-group-checkbox { display: flex; align-items: center; gap: 10px; height: 40px; margin-top: 25px; }
-        button { background-color: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; min-width: 80px; }
-        button:hover { background-color: #218838; }
+        .action-buttons button { background-color: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; min-width: 80px; }
+        .action-buttons button:hover { background-color: #218838; }
         #preview-area-images { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
         #preview-area-images img { max-width: 100px; height: auto; border: 1px solid #ddd; border-radius: 4px; }
+        .action-link { text-decoration: none; padding: 10px 15px; border-radius: 4px; font-size: 16px; margin-left: 10px; float: right;}
     </style>
 </head>
 <body>
-<a href="#" onclick="logout()" style="float: right; text-decoration: none; background-color: #dc3545; color: white; padding: 10px 15px; border-radius: 4px; margin-left: 10px;">
-    Đăng Xuất
-</a>
+
 <div class="container">
     <div class="column">
-        <a href="search.html" style="float: right; text-decoration: none; background-color: #007bff; color: white; padding: 10px 15px; border-radius: 4px;">
-            🔍 Xem Danh Sách & Tìm Kiếm
-        </a>
+        <div style="margin-bottom: 20px;">
+            <a href="search.html" class="action-link" style="background-color: #007bff; color: white;">
+                🔍 Xem Danh Sách & Tìm Kiếm
+            </a>
+            <a href="#" onclick="logout()" class="action-link" id="logout-btn" style="background-color: #dc3545; color: white;">
+                Đăng Xuất
+            </a>
+        </div>
 
         <h2>➕ Nhập Thông Tin Bất Động Sản</h2>
         <form id="property-form">
@@ -125,43 +130,17 @@
                 <div id="preview-area-images"></div>
             </div>
             
-            <button type="submit">Lưu Thông Tin</button>
-
+            <div class="action-buttons">
+                <button type="submit">Lưu Thông Tin</button>
+            </div>
         </form>
         <p style="margin-top: 15px; font-size: 0.9em; color: #6c757d;">*Dữ liệu được lưu trữ trên Cloud Firestore.</p>
     </div>
 </div>
 
 <script>
-    
-        function logout() {
-            auth.signOut().then(() => {
-            alert("Đã đăng xuất thành công.");
-            window.location.href = 'login.html';
-            }).catch(error => {
-            console.error("Lỗi đăng xuất:", error);
-    });
-        }
-
-    // Thêm đoạn này vào đầu thẻ <script> của input.html
-        const auth = firebase.auth();
-
-        auth.onAuthStateChanged(user => {
-            if (!user) {
-        // Nếu không có người dùng đăng nhập, chuyển hướng về trang login
-        alert("Bạn cần đăng nhập với quyền Admin để thực hiện chức năng này.");
-        window.location.href = 'login.html'; 
-            } else {
-        // (Tùy chọn) Hiện nút Đăng xuất
-        // Ví dụ: 
-        // document.getElementById('logout-btn').style.display = 'block';
-    }
-});
-    // GIỮ NGUYÊN TOÀN BỘ PHẦN KHỞI TẠO FIREBASE, CLOUDINARY CONFIG, VÀ HÀM LIÊN QUAN ĐẾN TẠO MỚI (CREATE)
-    // Tức là toàn bộ script từ dòng 419 đến hết hàm propertyFormSubmit(e)
-    
     // =======================================================
-    // 1. KHỞI TẠO FIREBASE & CẤU HÌNH CLOUDINARY
+    // 1. CẤU HÌNH & KHỞI TẠO
     // =======================================================
 
     const firebaseConfig = {
@@ -174,21 +153,41 @@
     };
     firebase.initializeApp(firebaseConfig);
 
+    const auth = firebase.auth();
     const db = firebase.firestore();
     const propertiesRef = db.collection('properties'); 
 
-    // ***************************************************************
     // CẤU HÌNH CLOUDINARY (ĐÃ SỬA LỖI URL VÀ BẢO MẬT)
     const CLOUDINARY_CLOUD_NAME = 'djngpyafe'; 
-    const CLOUDINARY_UPLOAD_PRESET = 'bdstx'; // Đảm bảo đã là Unsigned trên Console
+    const CLOUDINARY_UPLOAD_PRESET = 'bdstx'; 
     const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-    // ***************************************************************
-
+    
     // =======================================================
-    // 2. LOGIC XEM TRƯỚC & NỘP DỮ LIỆU (CREATE)
+    // 2. PHÂN QUYỀN VÀ ĐĂNG XUẤT
     // =======================================================
     
-    // Hàm xem trước ảnh form tạo mới
+    // Bắt buộc phải đăng nhập (Admin)
+    auth.onAuthStateChanged(user => {
+        if (!user) {
+            alert("Bạn cần đăng nhập với quyền Admin để thực hiện chức năng này.");
+            window.location.href = 'login.html'; 
+        }
+    });
+
+    function logout() {
+        auth.signOut().then(() => {
+            alert("Đã đăng xuất thành công.");
+            window.location.href = 'login.html'; 
+        }).catch(error => {
+            console.error("Lỗi đăng xuất:", error);
+            alert("Lỗi khi đăng xuất. Vui lòng thử lại.");
+        });
+    }
+
+    // =======================================================
+    // 3. LOGIC TẢI ẢNH (CLOUDINARY)
+    // =======================================================
+    
     function previewImages() {
         const fileInput = document.getElementById('image-upload');
         const previewContainer = document.getElementById('preview-area-images');
@@ -209,12 +208,8 @@
 
     document.getElementById('image-upload').addEventListener('change', previewImages);
 
-    // HÀM MỚI: Tải hình ảnh lên Cloudinary
+    // Tải hình ảnh lên Cloudinary
     async function uploadImagesToCloudinary(files) {
-        if (!CLOUDINARY_CLOUD_NAME || CLOUDINARY_CLOUD_NAME === 'YOUR_CLOUD_NAME') {
-            throw new Error("Vui lòng cấu hình CLOUDINARY_CLOUD_NAME và CLOUDINARY_UPLOAD_PRESET.");
-        }
-
         const uploadPromises = [];
 
         for (let i = 0; i < files.length; i++) {
@@ -229,7 +224,6 @@
             })
             .then(response => {
                 if (!response.ok) {
-                    // Cải thiện thông báo lỗi Bad Request (400)
                     return response.json().then(errorData => {
                         throw new Error(`Cloudinary upload failed: ${response.statusText} - ${errorData.error.message}`);
                     });
@@ -247,7 +241,10 @@
     }
     
 
-    // Xử lý Form nộp dữ liệu (CREATE - SỬ DỤNG CLOUDINARY)
+    // =======================================================
+    // 4. LOGIC LƯU DỮ LIỆU (CREATE)
+    // =======================================================
+
     async function propertyFormSubmit(e) {
         e.preventDefault();
         
