@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trang Web Quản Lý BĐS (Cloud Storage & Firestore)</title>
+    <title>Trang Web Quản Lý BĐS (Cloudinary & Firestore)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script> 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script> 
-
     <style>
         /* CSS code remains the same as previous response, including styles for modals, forms, and lists */
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; color: #333; }
@@ -96,7 +94,6 @@
                     <option value="Đông-Nam">Đông-Nam</option>
                     <option value="Tây-Bắc">Tây-Bắc</option>
                     <option value="Tây-Nam">Tây-Nam</option>
-                    <option value="Cập nhật">Cập nhật</option>
                 </select>
             </div>
             
@@ -243,7 +240,7 @@
 <div id="imageModal" class="modal-overlay">
     <div class="modal-content">
         <span class="modal-close" onclick="closeModal('imageModal')">&times;</span>
-        <h3 id="modal-title"></h3>
+        <h3 id="modal-title">Cập nhật Hình ảnh</h3>
         
         <input type="hidden" id="current-property-id">
 
@@ -349,42 +346,59 @@
 
 <script>
     // =======================================================
-    // 1. KHỞI TẠO FIREBASE & CÁC THAM CHIẾU
+    // 1. KHỞI TẠO FIREBASE & CẤU HÌNH CLOUDINARY
     // =======================================================
 
-    // THAY THẾ CONFIG NÀY BẰNG CẤU HÌNH THỰC TẾ CỦA DỰ ÁN FIREBASE CỦA BẠN
+    // THAY THẾ CONFIG FIREBASE NÀY BẰNG CẤU HÌNH THỰC TẾ CỦA DỰ ÁN CỦA BẠN
     const firebaseConfig = {
-  apiKey: "AIzaSyBBFhxxkIZSguuMV5AZzhLSWa19LYXMOY8",
-  authDomain: "bdss-1f754.firebaseapp.com",
-  projectId: "bdss-1f754",
-  storageBucket: "bdss-1f754.firebasestorage.app",
-  messagingSenderId: "1081373432468",
-  appId: "1:1081373432468:web:f38cab72330d75de67b281"
-};
-
+        apiKey: "YOUR_API_KEY", 
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        projectId: "YOUR_PROJECT",
+        // Không cần storageBucket cho việc này
+        messagingSenderId: "...",
+        appId: "..."
+    };
     firebase.initializeApp(firebaseConfig);
 
     const db = firebase.firestore();
     const propertiesRef = db.collection('properties'); 
-    // THAM CHIẾU STORAGE MỚI
-    const storageRef = firebase.storage().ref();
+
+    // ***************************************************************
+    // CẤU HÌNH CLOUDINARY - BẠN PHẢI THAY THẾ CÁC GIÁ TRỊ NÀY
+    const CLOUDINARY_CLOUD_NAME = 'djngpyafe'; // Ví dụ: 'my-project-images'
+    const CLOUDINARY_UPLOAD_PRESET = 'bdstx'; // Đã cấu hình trên Cloudinary Console
+    const CLOUDINARY_UPLOAD_URL = `cloudinary://449967988842271:QJ1swtm_FoqO50b1qeWZ3tRiH58>@djngpyafe`;
+    // ***************************************************************
 
     let properties = []; 
-    let newImageFiles = []; // Dùng File object thay vì Base64 cho việc upload
+    let newImageFiles = []; // Dùng File object cho việc upload trong Modal
 
     // =======================================================
     // 2. LOGIC XEM TRƯỚC & NỘP DỮ LIỆU (CREATE)
     // =======================================================
     
-    // Hàm xem trước ảnh (giữ lại để người dùng xem ảnh đã chọn)
+    // Hàm xem trước ảnh form tạo mới
     function previewImages() {
-        // ... (Logic xem trước ảnh form tạo mới)
+        const fileInput = document.getElementById('image-upload');
+        const previewContainer = document.getElementById('preview-area-images');
+        previewContainer.innerHTML = ''; 
+        const files = Array.from(fileInput.files);
+
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.alt = file.name;
+                previewContainer.appendChild(img);
+            };
+            reader.readAsDataURL(file); 
+        });
     }
 
     // Hàm xử lý khi chọn ảnh mới trong Modal
     function previewNewImages(event) {
         const fileInput = event.target;
-        // LƯU CÁC FILE OBJECT VÀO newImageFiles
         newImageFiles = Array.from(fileInput.files);
         const previewContainer = document.getElementById('new-images-preview');
         previewContainer.innerHTML = ''; 
@@ -399,7 +413,6 @@
                 img.alt = file.name;
                 previewContainer.appendChild(img);
             };
-            // Vẫn dùng readAsDataURL để hiển thị xem trước
             reader.readAsDataURL(file); 
         });
     }
@@ -408,7 +421,42 @@
     document.getElementById('update-image-upload').addEventListener('change', previewNewImages);
 
 
-    // Xử lý Form nộp dữ liệu (CREATE - ĐÃ CẬP NHẬT LOGIC LƯU ẢNH)
+    // HÀM MỚI: Tải hình ảnh lên Cloudinary
+    async function uploadImagesToCloudinary(files) {
+        if (!CLOUDINARY_CLOUD_NAME || CLOUDINARY_CLOUD_NAME === 'YOUR_CLOUD_NAME') {
+            throw new Error("Vui lòng cấu hình CLOUDINARY_CLOUD_NAME và CLOUDINARY_UPLOAD_PRESET trong mã JavaScript.");
+        }
+
+        const uploadPromises = [];
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET); // Dùng preset đã cấu hình
+
+            const promise = fetch(CLOUDINARY_UPLOAD_URL, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Cloudinary upload failed: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                return data.secure_url; // Trả về URL an toàn (HTTPS)
+            });
+            
+            uploadPromises.push(promise);
+        }
+
+        return Promise.all(uploadPromises);
+    }
+    
+
+    // Xử lý Form nộp dữ liệu (CREATE - SỬ DỤNG CLOUDINARY)
     async function propertyFormSubmit(e) {
         e.preventDefault();
         
@@ -440,7 +488,8 @@
         }
 
         try {
-            const imageUrls = await uploadImagesToStorage(imageFiles); // Hàm tải ảnh
+            // TẢI ẢNH LÊN CLOUDINARY
+            const imageUrls = await uploadImagesToCloudinary(imageFiles); 
             
             const newProperty = {
                 name, phone, address, price, area, direction, bedrooms, wc, kitchens, floors, legal, loanable,
@@ -454,104 +503,42 @@
             document.getElementById('property-form').reset();
             document.getElementById('preview-area-images').innerHTML = ''; 
         } catch (error) {
-            console.error("Lỗi khi lưu dữ liệu hoặc tải ảnh: ", error);
-            alert("Lỗi khi lưu dữ liệu. Vui lòng kiểm tra console.");
+            console.error("Lỗi khi lưu dữ liệu hoặc tải ảnh lên Cloudinary: ", error);
+            alert("Lỗi khi lưu dữ liệu. Vui lòng kiểm tra console và cấu hình Cloudinary.");
         }
     }
 
     document.getElementById('property-form').addEventListener('submit', propertyFormSubmit);
 
-    // HÀM MỚI: Tải hình ảnh lên Firebase Storage
-    async function uploadImagesToStorage(files, propertyId = null) {
-        const uploadPromises = [];
-        const folderName = propertyId || 'temp_' + Date.now(); // Tạo folder tạm nếu là tạo mới
-
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            const imageName = `${Date.now()}_${file.name}`;
-            const imageRef = storageRef.child(`properties/${folderName}/${imageName}`);
-            
-            const uploadTask = imageRef.put(file);
-            
-            // Chờ tải lên và lấy URL
-            const promise = new Promise((resolve, reject) => {
-                uploadTask.on(
-                    'state_changed',
-                    null, // Progress function (bỏ qua)
-                    (error) => { // Error function
-                        reject(error);
-                    },
-                    async () => { // Complete function
-                        try {
-                            const downloadURL = await imageRef.getDownloadURL();
-                            resolve(downloadURL);
-                        } catch (e) {
-                            reject(e);
-                        }
-                    }
-                );
-            });
-            uploadPromises.push(promise);
-        }
-
-        return Promise.all(uploadPromises);
-    }
-    
     // =======================================================
-    // 3. LOGIC XÓA & CẬP NHẬT ẢNH (DELETE/UPDATE IMAGES)
+    // 3. LOGIC XÓA & CẬP NHẬT ẢNH (UPDATE/DELETE IMAGES)
     // =======================================================
     
-    // Hàm lấy Storage Path từ URL
-    function getStoragePath(url) {
-        // Ví dụ URL: https://firebasestorage.googleapis.com/v0/b/project.appspot.com/o/properties%2Ftemp_...%2Fimage.jpg?...
-        const pathMatch = url.match(/\/o\/(.+?)\?alt/);
-        if (pathMatch && pathMatch[1]) {
-            // Decode URI và thay thế '%2F' thành '/'
-            return decodeURIComponent(pathMatch[1]);
-        }
-        return null;
-    }
+    // Lưu ý: Để xóa ảnh khỏi Cloudinary qua frontend, bạn cần sử dụng Signed Upload (phức tạp hơn)
+    // hoặc một hàm Cloud Function (Backend) để thực hiện thao tác xóa.
+    // Vì mục đích đơn giản hóa, chúng ta sẽ chỉ xóa URL khỏi Firestore. Ảnh vẫn còn trên Cloudinary.
 
-    // Hàm xóa file ảnh khỏi Storage
-    async function deleteFileFromStorage(imageUrl) {
-        const path = getStoragePath(imageUrl);
-        if (path) {
-            const fileRef = firebase.storage().ref(path);
-            await fileRef.delete();
-            console.log(`Đã xóa file: ${path}`);
-        }
-    }
-
-    // Hàm XÓA BẤT ĐỘNG SẢN HOÀN TOÀN (DELETE)
+    // Hàm XÓA BẤT ĐỘNG SẢN HOÀN TOÀN (DELETE - ĐÃ LOẠI BỎ LOGIC XÓA ẢNH KHỎI CLOUDINARY)
     async function deleteProperty(propertyId) {
         if (!confirm('Bạn có chắc chắn muốn XÓA VĨNH VIỄN bất động sản này không?')) return;
         
         try {
-            const prop = properties.find(p => p.id === propertyId);
-            if (prop && prop.images) {
-                // Xóa tất cả file ảnh liên quan
-                await Promise.all(prop.images.map(url => deleteFileFromStorage(url)));
-            }
-            
-            // Xóa Document Firestore
             await propertiesRef.doc(propertyId).delete();
-            alert('Đã xóa bất động sản và các file ảnh thành công!');
+            alert('Đã xóa bất động sản thành công!');
         } catch (error) {
             console.error("Lỗi khi xóa: ", error);
             alert("Lỗi khi xóa dữ liệu. Vui lòng kiểm tra console.");
         }
     }
 
-    // Hàm xóa ảnh cũ trong Modal (ĐÃ CẬP NHẬT LOGIC XÓA FILE)
+    // Hàm xóa ảnh cũ trong Modal (CHỈ XÓA URL KHỎI FIRESTORE)
     async function deleteImage(propertyId, imageUrl) {
-        if (!confirm('Bạn có chắc chắn muốn xóa hình ảnh này không?')) return;
+        if (!confirm('Bạn có chắc chắn muốn xóa hình ảnh này không? (Ảnh sẽ vẫn còn trên Cloudinary)')) return;
 
         const propertyIndex = properties.findIndex(p => p.id === propertyId);
         if (propertyIndex === -1) return;
 
         try {
-            await deleteFileFromStorage(imageUrl); // Xóa file trên Storage
-
             // Cập nhật mảng URL trên Firestore
             properties[propertyIndex].images = properties[propertyIndex].images.filter(img => img !== imageUrl);
             
@@ -566,23 +553,18 @@
         }
     }
 
-    // Hàm lưu cập nhật ảnh (từ Modal) - (UPDATE IMAGES - ĐÃ CẬP NHẬT LOGIC TẢI FILE)
+    // Hàm lưu cập nhật ảnh (từ Modal) - (TẢI LÊN CLOUDINARY)
     async function saveUpdatedImages() {
         const propertyId = document.getElementById('current-property-id').value; 
         const propertyIndex = properties.findIndex(p => p.id === propertyId);
-        if (propertyIndex === -1) {
-            alert('Lỗi: Không tìm thấy bất động sản để cập nhật.');
-            return;
-        }
-        
-        if (newImageFiles.length === 0) {
-            alert('Không có ảnh mới nào được chọn.');
+        if (propertyIndex === -1 || newImageFiles.length === 0) {
+            if (newImageFiles.length === 0) alert('Không có ảnh mới nào được chọn.');
             return;
         }
 
         try {
-            // Tải ảnh mới lên Storage (dùng ID tài sản làm tên folder)
-            const newImageUrls = await uploadImagesToStorage(newImageFiles, propertyId); 
+            // Tải ảnh mới lên Cloudinary
+            const newImageUrls = await uploadImagesToCloudinary(newImageFiles); 
             
             const currentImages = properties[propertyIndex].images || [];
             const updatedImages = [...currentImages, ...newImageUrls];
@@ -596,23 +578,97 @@
             closeModal('imageModal');
             newImageFiles = []; // Reset
         } catch (error) {
-            console.error("Lỗi khi cập nhật ảnh: ", error);
+            console.error("Lỗi khi cập nhật ảnh lên Cloudinary: ", error);
             alert("Lỗi khi cập nhật ảnh. Vui lòng kiểm tra console.");
         }
     }
-
-    // =======================================================
-    // 4. LOGIC CẬP NHẬT CHI TIẾT & READ (Giữ nguyên)
-    // =======================================================
     
+    // =======================================================
+    // 4. LOGIC HIỂN THỊ & CẬP NHẬT CHI TIẾT
+    // =======================================================
+
+    // Hàm mở Modal Cập nhật Ảnh
+    function openImageModal(propertyId) {
+        const property = properties.find(p => p.id === propertyId);
+        if (!property) return;
+        
+        document.getElementById('current-property-id').value = propertyId;
+        document.getElementById('modal-title').textContent = `Cập nhật ảnh cho: ${property.name}`;
+        
+        const gallery = document.getElementById('modal-gallery');
+        gallery.innerHTML = ''; 
+
+        // Hiển thị ảnh hiện tại
+        (property.images || []).forEach(url => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'image-wrapper';
+            wrapper.innerHTML = `
+                <img src="${url}" alt="Ảnh BĐS">
+                <button class="delete-image-btn" onclick="deleteImage('${propertyId}', '${url}')">X</button>
+            `;
+            gallery.appendChild(wrapper);
+        });
+        
+        // Reset preview ảnh mới
+        document.getElementById('update-image-upload').value = null;
+        document.getElementById('new-images-preview').innerHTML = '';
+        newImageFiles = [];
+
+        document.getElementById('imageModal').style.display = 'flex';
+    }
+
     // Hàm mở Modal Cập nhật Chi tiết (Giữ nguyên)
     function openDetailsModal(propertyId) {
-        // ... (Logic Populate form)
+        const property = properties.find(p => p.id === propertyId);
+        if (!property) return;
+
+        document.getElementById('edit-property-id').value = propertyId;
+        
+        document.getElementById('edit-name').value = property.name !== "Chưa cập nhật" ? property.name : '';
+        document.getElementById('edit-phone').value = property.phone !== "Chưa cập nhật" ? property.phone : '';
+        document.getElementById('edit-address').value = property.address !== "Chưa cập nhật" ? property.address : '';
+        document.getElementById('edit-price').value = property.price !== null ? property.price : '';
+        document.getElementById('edit-area').value = property.area !== null ? property.area : '';
+        document.getElementById('edit-bedrooms').value = property.bedrooms !== null ? property.bedrooms : '';
+        document.getElementById('edit-wc').value = property.wc !== null ? property.wc : '';
+        document.getElementById('edit-kitchens').value = property.kitchens !== null ? property.kitchens : '';
+        document.getElementById('edit-floors').value = property.floors !== null ? property.floors : '';
+        document.getElementById('edit-direction').value = property.direction !== "Chưa cập nhật" ? property.direction : '';
+        document.getElementById('edit-legal').value = property.legal !== "Chưa cập nhật" ? property.legal : '';
+        document.getElementById('edit-loanable').checked = property.loanable;
+        
+        document.getElementById('detailsModal').style.display = 'flex';
     }
 
     // Hàm lưu Chi tiết Cập nhật (Giữ nguyên)
     function savePropertyDetails() {
-        // ... (Logic chuẩn hóa và gửi update lên Firestore)
+        const propertyId = document.getElementById('edit-property-id').value;
+        const name = document.getElementById('edit-name').value.trim() || "Chưa cập nhật";
+        const phone = document.getElementById('edit-phone').value.trim() || "Chưa cập nhật";
+        const address = document.getElementById('edit-address').value.trim() || "Chưa cập nhật";
+        const price = document.getElementById('edit-price').value.trim() ? parseFloat(document.getElementById('edit-price').value.trim()) : null; 
+        const area = document.getElementById('edit-area').value.trim() ? parseFloat(document.getElementById('edit-area').value.trim()) : null; 
+        const direction = document.getElementById('edit-direction').value || "Chưa cập nhật";
+        const bedrooms = document.getElementById('edit-bedrooms').value.trim() ? parseInt(document.getElementById('edit-bedrooms').value.trim()) : null;
+        const wc = document.getElementById('edit-wc').value.trim() ? parseInt(document.getElementById('edit-wc').value.trim()) : null;
+        const kitchens = document.getElementById('edit-kitchens').value.trim() ? parseInt(document.getElementById('edit-kitchens').value.trim()) : null;
+        const floors = document.getElementById('edit-floors').value.trim() ? parseInt(document.getElementById('edit-floors').value.trim()) : null;
+        const legal = document.getElementById('edit-legal').value || "Chưa cập nhật";
+        const loanable = document.getElementById('edit-loanable').checked;
+
+        const updatedData = {
+            name, phone, address, price, area, direction, bedrooms, wc, kitchens, floors, legal, loanable
+        };
+
+        propertiesRef.doc(propertyId).update(updatedData)
+            .then(() => {
+                alert('Đã cập nhật chi tiết bất động sản thành công!');
+                closeModal('detailsModal');
+            })
+            .catch(error => {
+                console.error("Lỗi khi cập nhật chi tiết Firestore: ", error);
+                alert("Lỗi khi cập nhật chi tiết. Vui lòng kiểm tra console.");
+            });
     }
 
     // Listener lắng nghe sự kiện thay đổi dữ liệu từ Firestore (Giữ nguyên)
@@ -627,16 +683,6 @@
         
         searchProperties();
     });
-
-    // Hàm đóng Modal chung
-    function closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
-        
-        if(modalId === 'imageModal') {
-            document.getElementById('update-image-upload').value = null;
-            newImageFiles = []; 
-        }
-    }
     
     // Xử lý đóng modal khi click ra ngoài
     window.onclick = function(event) {
@@ -649,15 +695,96 @@
             closeModal('detailsModal');
         }
     }
-    
-    // Hàm tìm kiếm và lọc chi tiết (FILTER) - (Giữ nguyên)
+
+    // Hàm tìm kiếm và lọc chi tiết (FILTER)
     function searchProperties() {
-        // ... (Logic lọc) ...
-        // ... (Logic hiển thị kết quả) ...
+        const filterName = document.getElementById('filter-name').value.toLowerCase();
+        const filterPhone = document.getElementById('filter-phone').value.toLowerCase();
+        const filterAddress = document.getElementById('filter-address').value.toLowerCase();
+        const filterPriceMin = parseFloat(document.getElementById('filter-price-min').value);    
+        const filterPriceMax = parseFloat(document.getElementById('filter-price-max').value);    
+        const filterAreaMin = parseFloat(document.getElementById('filter-area-min').value);    
+        const filterDirection = document.getElementById('filter-direction').value;
+        const filterLegal = document.getElementById('filter-legal').value;
+        const filterLoanable = document.getElementById('filter-loanable').checked;
+        const filterBedroomsMin = parseInt(document.getElementById('filter-bedrooms-min').value);
+        const filterWCMin = parseInt(document.getElementById('filter-wc-min').value);
+        const filterFloorsMin = parseInt(document.getElementById('filter-floors-min').value);
+
+        const resultsList = document.getElementById('results-list');
+        resultsList.innerHTML = '';
+
+        const filteredProperties = properties.filter(prop => {
+            const matchName = prop.name.toLowerCase().includes(filterName);
+            const matchPhone = prop.phone.toLowerCase().includes(filterPhone);
+            const matchAddress = prop.address.toLowerCase().includes(filterAddress);
+            
+            const propPrice = prop.price !== null ? prop.price : -Infinity;
+            const matchPriceMin = isNaN(filterPriceMin) || propPrice >= filterPriceMin;    
+            const matchPriceMax = isNaN(filterPriceMax) || propPrice <= filterPriceMax;    
+            const matchPrice = matchPriceMin && matchPriceMax;
+            
+            const propArea = prop.area !== null ? prop.area : -Infinity;
+            const matchArea = isNaN(filterAreaMin) || propArea >= filterAreaMin;
+            
+            const matchDirection = filterDirection === "" || prop.direction === filterDirection;
+            const matchLegal = filterLegal === "" || prop.legal === filterLegal;
+            const matchLoanable = !filterLoanable || prop.loanable === true;    
+            
+            const propBedrooms = prop.bedrooms !== null ? prop.bedrooms : -Infinity;
+            const matchBedrooms = isNaN(filterBedroomsMin) || propBedrooms >= filterBedroomsMin;
+            
+            const propWC = prop.wc !== null ? prop.wc : -Infinity;
+            const matchWC = isNaN(filterWCMin) || propWC >= filterWCMin;
+            
+            const propFloors = prop.floors !== null ? prop.floors : -Infinity;
+            const matchFloors = isNaN(filterFloorsMin) || propFloors >= filterFloorsMin;
+            
+            return matchName && matchPhone && matchAddress && matchPrice && matchArea && 
+                   matchDirection && matchLegal && matchLoanable && 
+                   matchBedrooms && matchWC && matchFloors;
+        });
+
+        // Hiển thị kết quả
+        filteredProperties.forEach(prop => {
+            const item = document.createElement('li');
+            item.className = 'property-item';
+            
+            // Lấy ảnh đầu tiên (hoặc ảnh placeholder nếu không có)
+            const firstImage = (prop.images && prop.images.length > 0) ? 
+                                prop.images[0] : 
+                                'https://via.placeholder.com/150x100?text=No+Image';
+
+            item.innerHTML = `
+                <div class="property-images" onclick="openImageModal('${prop.id}')">
+                    <img src="${firstImage}" alt="${prop.name}">
+                    <p style="font-size: 0.8em; margin: 0; text-align: center;">${prop.images ? prop.images.length : 0} Ảnh</p>
+                </div>
+                <div>
+                    <h4>${prop.name}</h4>
+                    <p style="font-weight: bold; color: #dc3545; margin-top: 0;">${prop.price !== null ? prop.price + ' Tỷ VNĐ' : 'Chưa cập nhật Giá'}</p>
+                    <p style="margin: 5px 0; font-size: 0.9em;">Địa chỉ: ${prop.address}</p>
+                    <p style="margin: 5px 0; font-size: 0.9em;">SĐT: ${prop.phone}</p>
+                    
+                    <div class="property-details-grid">
+                        <span>**Diện tích:** ${prop.area !== null ? prop.area + ' m²' : '?'}</span>
+                        <span>**Hướng:** ${prop.direction}</span>
+                        <span>**Sổ:** ${prop.legal}</span>
+                        <span>**PN/WC:** ${prop.bedrooms !== null ? prop.bedrooms : '?'} / ${prop.wc !== null ? prop.wc : '?'}</span>
+                        <span>**Lầu:** ${prop.floors !== null ? prop.floors : '?'}</span>
+                        <span>**Vay:** ${prop.loanable ? 'Có' : 'Không'}</span>
+                    </div>
+                </div>
+                <div class="property-actions">
+                    <button class="edit-details-btn" onclick="openDetailsModal('${prop.id}')">Sửa Chi tiết</button>
+                    <button class="update-img-btn" onclick="openImageModal('${prop.id}')">Quản lý Ảnh</button>
+                    <button class="delete-btn" onclick="deleteProperty('${prop.id}')">Xóa BĐS</button>
+                </div>
+            `;
+            resultsList.appendChild(item);
+        });
     }
 
 </script>
 </body>
 </html>
-
-
