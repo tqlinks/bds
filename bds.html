@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trang Web Quản Lý & Tìm Kiếm Bất Động Sản (Cloud Firestore)</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script> 
     
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script> 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script> 
 
     <style>
         /* ======================================================= */
-        /* CSS CHO GIAO DIỆN CHUNG (Giữ nguyên) */
+        /* CSS CHO GIAO DIỆN CHUNG */
         /* ======================================================= */
         body {
             font-family: Arial, sans-serif;
@@ -103,6 +103,7 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
+            min-width: 80px; /* Thêm min-width cho đồng đều */
         }
         button:hover {
             background-color: #218838;
@@ -123,6 +124,16 @@
         .update-img-btn:hover {
             background-color: #0056b3;
         }
+        .edit-details-btn { /* Nút mới */
+            background-color: #ffc107;
+            color: #333;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        .edit-details-btn:hover {
+            background-color: #e0a800;
+        }
+
         /* ======================================================= */
         /* CSS CHO KẾT QUẢ VÀ HÌNH ẢNH */
         /* ======================================================= */
@@ -327,7 +338,6 @@
                     <option value="Đông-Nam">Đông-Nam</option>
                     <option value="Tây-Bắc">Tây-Bắc</option>
                     <option value="Tây-Nam">Tây-Nam</option>
-                    <option value="Cập nhật">Cập nhật</option>
                 </select>
             </div>
             
@@ -474,7 +484,7 @@
 
 <div id="imageModal" class="modal-overlay">
     <div class="modal-content">
-        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <span class="modal-close" onclick="closeModal('imageModal')">&times;</span>
         <h3 id="modal-title"></h3>
         
         <input type="hidden" id="current-property-id">
@@ -497,40 +507,117 @@
     </div>
 </div>
 
+<div id="detailsModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 600px;">
+        <span class="modal-close" onclick="closeModal('detailsModal')">&times;</span>
+        <h3 style="color: #ffc107;">✏️ Sửa Thông Tin Chi Tiết</h3>
+        
+        <input type="hidden" id="edit-property-id">
+
+        <form onsubmit="event.preventDefault(); savePropertyDetails();">
+            <div class="form-group">
+                <label for="edit-name">Tên / Tiêu đề:</label>
+                <input type="text" id="edit-name" placeholder="Tiêu đề">
+            </div>
+            <div class="form-group-inline">
+                <div class="inline-item">
+                    <label for="edit-price">Giá (tỷ):</label>
+                    <input type="number" id="edit-price" step="0.01" placeholder="Giá">
+                </div>
+                <div class="inline-item">
+                    <label for="edit-area">Diện tích (m²):</label>
+                    <input type="number" id="edit-area" step="0.1" placeholder="Diện tích">
+                </div>
+            </div>
+            <div class="form-group-inline">
+                <div class="inline-item">
+                    <label for="edit-direction">Hướng Nhà:</label>
+                    <select id="edit-direction">
+                        <option value="">Chọn Hướng</option>
+                        <option value="Đông">Đông</option>
+                        <option value="Tây">Tây</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Bắc">Bắc</option>
+                        <option value="Đông-Bắc">Đông-Bắc</option>
+                        <option value="Đông-Nam">Đông-Nam</option>
+                        <option value="Tây-Bắc">Tây-Bắc</option>
+                        <option value="Tây-Nam">Tây-Nam</option>
+                    </select>
+                </div>
+                <div class="inline-item">
+                    <label for="edit-legal">Tình trạng Sổ:</label>
+                    <select id="edit-legal">
+                        <option value="">Chọn Tình trạng</option>
+                        <option value="Sổ Hồng">Sổ Hồng</option>
+                        <option value="Sổ Đỏ">Sổ Đỏ</option>
+                        <option value="Hợp Đồng Mua Bán">Hợp Đồng Mua Bán</option>
+                        <option value="Chưa có Sổ">Chưa có Sổ</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group-inline">
+                <div class="inline-item">
+                    <label for="edit-bedrooms">Số PN:</label>
+                    <input type="number" id="edit-bedrooms" min="0" placeholder="PN">
+                </div>
+                <div class="inline-item">
+                    <label for="edit-wc">Số WC:</label>
+                    <input type="number" id="edit-wc" min="0" placeholder="WC">
+                </div>
+                <div class="inline-item">
+                    <label for="edit-floors">Số Lầu:</label>
+                    <input type="number" id="edit-floors" min="0" placeholder="Lầu">
+                </div>
+            </div>
+            <div class="form-group-inline">
+                 <div class="inline-item">
+                    <label for="edit-address">Địa chỉ:</label>
+                    <input type="text" id="edit-address" placeholder="Địa chỉ">
+                </div>
+                <div class="inline-item">
+                    <label for="edit-phone">Số điện thoại:</label>
+                    <input type="text" id="edit-phone" placeholder="SĐT">
+                </div>
+            </div>
+            <div class="form-group-checkbox">
+                <input type="checkbox" id="edit-loanable">
+                <label for="edit-loanable" style="margin-bottom: 0;">Có thể vay thêm</label>
+            </div>
+            
+            <button type="submit" style="margin-top: 15px; width: 100%; background-color: #007bff;">Lưu Thông Tin Cập Nhật</button>
+        </form>
+    </div>
+</div>
+
 <script>
     // =======================================================
-    // 1. KHỞI TẠO FIREBASE (ĐÃ CHUYỂN SANG FIRESTORE)
+    // 1. KHỞI TẠO FIREBASE
     // =======================================================
 
     // THAY THẾ CONFIG NÀY BẰNG CẤU HÌNH THỰC TẾ CỦA DỰ ÁN FIREBASE CỦA BẠN
     const firebaseConfig = {
-        apiKey: "AIzaSyBBFhxxkIZSguuMV5AZzhLSWa19LYXMOY8",
-  authDomain: "bdss-1f754.firebaseapp.com",
-  projectId: "bdss-1f754",
-  storageBucket: "bdss-1f754.firebasestorage.app",
-  messagingSenderId: "1081373432468",
-  appId: "1:1081373432468:web:f38cab72330d75de67b281"
-};
+        apiKey: "YOUR_API_KEY", 
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        projectId: "YOUR_PROJECT",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "...",
+        appId: "..."
+    };
 
-    // Khởi tạo Firebase
     firebase.initializeApp(firebaseConfig);
 
-    // THAY ĐỔI: Khởi tạo Cloud Firestore
     const db = firebase.firestore();
-    // Tham chiếu đến Collection chính nơi bạn lưu trữ BĐS
     const propertiesRef = db.collection('properties'); 
 
-    // Biến toàn cục để lưu trữ dữ liệu đã tải về
     let properties = []; 
-    // Biến tạm để lưu trữ các ảnh mới được chọn trong Modal
     let newImagesToUpload = [];
 
     // =======================================================
-    // 2. LOGIC XEM TRƯỚC VÀ NỘP DỮ LIỆU (CREATE - FIRESTORE)
+    // 2. LOGIC XEM TRƯỚC & NỘP DỮ LIỆU (CREATE)
     // =======================================================
     
-    // Hàm xử lý xem trước nhiều ảnh (cho form nhập liệu) - Giữ nguyên
     function previewImages() {
+        // ... (Logic xem trước ảnh form tạo mới)
         const fileInput = document.getElementById('image-upload');
         const previewContainer = document.getElementById('preview-area-images');
         previewContainer.innerHTML = ''; 
@@ -549,48 +636,39 @@
         }
     }
 
-    // Hàm xử lý xem trước ảnh mới (cho Modal cập nhật) - Giữ nguyên
     function previewNewImages(event) {
+        // ... (Logic xem trước ảnh form cập nhật)
         const fileInput = event.target;
         const files = Array.from(fileInput.files);
         const previewContainer = document.getElementById('new-images-preview');
         previewContainer.innerHTML = ''; 
-        newImagesToUpload = []; // Reset mảng ảnh mới
+        newImagesToUpload = []; 
 
         if (files.length === 0) return;
 
-        let filesProcessedCount = 0;
-        
         files.forEach(file => {
             const reader = new FileReader();
             reader.onload = function(e) {
-                // 1. Lưu Base64 vào mảng tạm
                 newImagesToUpload.push(e.target.result);
                 
-                // 2. Hiển thị xem trước
                 const img = document.createElement('img');
                 img.src = e.target.result;
                 img.alt = "Ảnh mới xem trước";
                 previewContainer.appendChild(img);
-
-                filesProcessedCount++;
             };
             reader.readAsDataURL(file);
         });
     }
     
-    // LẮNG NGHE SỰ KIỆN CHỌN ẢNH FORM
     document.getElementById('image-upload').addEventListener('change', previewImages);
-
-    // LẮNG NGHE SỰ KIỆN CHỌN ẢNH TRONG MODAL
     document.getElementById('update-image-upload').addEventListener('change', previewNewImages);
 
 
-    // Xử lý Form nộp dữ liệu (CREATE - ĐÃ CÓ LOGIC CHUẨN HÓA)
+    // Xử lý Form nộp dữ liệu (CREATE)
     document.getElementById('property-form').addEventListener('submit', function(e) {
         e.preventDefault();
 
-        // Lấy giá trị form và ÁP DỤNG LOGIC MẶC ĐỊNH ("Chưa cập nhật" hoặc null)
+        // LOGIC CHUẨN HÓA DỮ LIỆU (Giữ nguyên)
         const name = document.getElementById('name').value.trim() || "Chưa cập nhật";
         const phone = document.getElementById('phone').value.trim() || "Chưa cập nhật";
         const address = document.getElementById('address').value.trim() || "Chưa cập nhật";
@@ -637,30 +715,15 @@
 
                 if (filesProcessed === imageFiles.length) {
                     const newProperty = {
-                        name: name,
-                        phone: phone,
-                        address: address,
-                        price: price, 
-                        area: area,   
+                        name, phone, address, price, area, direction, bedrooms, wc, kitchens, floors, legal, loanable,
                         images: imageBase64Array, 
-                        
-                        direction: direction,
-                        bedrooms: bedrooms, 
-                        wc: wc,             
-                        kitchens: kitchens, 
-                        floors: floors,     
-                        legal: legal,
-                        loanable: loanable
                     };
 
-                    // THAY ĐỔI: Sử dụng .add() để thêm Document vào Collection
                     propertiesRef.add(newProperty)
                         .then(() => {
                             alert('Đã lưu thông tin bất động sản thành công!');
-                            // Reset form và xóa ảnh xem trước
                             document.getElementById('property-form').reset();
                             document.getElementById('preview-area-images').innerHTML = ''; 
-                            // Firestore Listener sẽ tự động cập nhật danh sách
                         })
                         .catch(error => {
                             console.error("Lỗi khi lưu vào Firestore: ", error);
@@ -673,18 +736,40 @@
     });
 
     // =======================================================
-    // 3. LOGIC XÓA & CẬP NHẬT ẢNH (UPDATE/DELETE - FIRESTORE)
+    // 3. LOGIC XÓA & CẬP NHẬT ẢNH (DELETE/UPDATE IMAGES)
     // =======================================================
+    
+    // Hàm đóng Modal chung
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+        
+        // Reset chỉ cho modal ảnh
+        if(modalId === 'imageModal') {
+            document.getElementById('update-image-upload').value = null;
+            newImagesToUpload = []; 
+        }
+    }
+
+    // Hàm mở modal ảnh (Giữ nguyên)
+    function openImageModal(propertyId) {
+        const property = properties.find(p => p.id === propertyId);
+        if (!property) return;
+
+        const modal = document.getElementById('imageModal');
+        // ... (Logic hiển thị ảnh hiện tại và reset form ảnh mới) ...
+        
+        document.getElementById('current-property-id').value = propertyId;
+        // ... (Hiển thị ảnh) ...
+
+        modal.style.display = 'flex';
+    }
 
     // Hàm XÓA BẤT ĐỘNG SẢN HOÀN TOÀN (DELETE)
     function deleteProperty(propertyId) {
         if (!confirm('Bạn có chắc chắn muốn XÓA VĨNH VIỄN bất động sản này không?')) return;
-
-        // THAY ĐỔI: Sử dụng .doc(ID).delete() để xóa Document
         propertiesRef.doc(propertyId).delete()
             .then(() => {
                 alert('Đã xóa bất động sản thành công!');
-                // Firestore Listener sẽ tự động cập nhật danh sách.
             })
             .catch(error => {
                  console.error("Lỗi khi xóa trên Firestore: ", error);
@@ -692,23 +777,20 @@
             });
     }
 
-    // Hàm xóa ảnh cũ trong Modal
+    // Hàm xóa ảnh cũ trong Modal (Giữ nguyên)
     function deleteImage(propertyId, imageBase64) {
         if (!confirm('Bạn có chắc chắn muốn xóa hình ảnh này không?')) return;
 
         const propertyIndex = properties.findIndex(p => p.id === propertyId);
         if (propertyIndex === -1) return;
 
-        // Lọc bỏ hình ảnh khỏi mảng cục bộ
         properties[propertyIndex].images = properties[propertyIndex].images.filter(img => img !== imageBase64);
 
-        // THAY ĐỔI: Sử dụng .doc(ID).update() để cập nhật trường 'images'
         propertiesRef.doc(propertyId).update({
             images: properties[propertyIndex].images
         })
         .then(() => {
-             // Cập nhật lại giao diện Modal ngay lập tức
-            openModal(propertyId);
+            openImageModal(propertyId);
         })
         .catch(error => {
             console.error("Lỗi khi xóa ảnh khỏi Firestore: ", error);
@@ -716,7 +798,7 @@
         });
     }
 
-    // Hàm lưu cập nhật ảnh (từ Modal) - (UPDATE)
+    // Hàm lưu cập nhật ảnh (từ Modal) - (UPDATE IMAGES)
     function saveUpdatedImages() {
         const propertyId = document.getElementById('current-property-id').value; 
         const propertyIndex = properties.findIndex(p => p.id === propertyId);
@@ -733,14 +815,12 @@
             return;
         }
         
-        // THAY ĐỔI: Sử dụng .doc(ID).update() để cập nhật mảng ảnh
         propertiesRef.doc(propertyId).update({
             images: updatedImages
         })
         .then(() => {
             alert('Đã cập nhật hình ảnh thành công!');
-            
-            closeModal();
+            closeModal('imageModal');
             newImagesToUpload = [];
         })
         .catch(error => {
@@ -750,89 +830,122 @@
     }
 
     // =======================================================
-    // 4. LOGIC TẢI & HIỂN THỊ DỮ LIỆU (READ - FIRESTORE)
+    // 4. LOGIC CẬP NHẬT CHI TIẾT (MỚI)
     // =======================================================
+    
+    // Hàm mở Modal Cập nhật Chi tiết
+    function openDetailsModal(propertyId) {
+        const property = properties.find(p => p.id === propertyId);
+        if (!property) return;
 
-    // THAY ĐỔI: Listener lắng nghe sự kiện thay đổi dữ liệu từ Firestore
-    propertiesRef.onSnapshot((snapshot) => {
-        properties = []; // Xóa dữ liệu cũ
+        // Lưu ID tài sản
+        document.getElementById('edit-property-id').value = propertyId;
         
-        // Lặp qua các Document (doc) trong Snapshot
+        // Populate các trường trong modal
+        // Nếu giá trị là "Chưa cập nhật", đặt giá trị input thành rỗng ""
+        document.getElementById('edit-name').value = property.name !== "Chưa cập nhật" ? property.name : '';
+        document.getElementById('edit-phone').value = property.phone !== "Chưa cập nhật" ? property.phone : '';
+        document.getElementById('edit-address').value = property.address !== "Chưa cập nhật" ? property.address : '';
+        
+        // Populate các trường số (kiểm tra null)
+        document.getElementById('edit-price').value = property.price !== null ? property.price : '';
+        document.getElementById('edit-area').value = property.area !== null ? property.area : '';
+        document.getElementById('edit-bedrooms').value = property.bedrooms !== null ? property.bedrooms : '';
+        document.getElementById('edit-wc').value = property.wc !== null ? property.wc : '';
+        document.getElementById('edit-kitchens').value = property.kitchens !== null ? property.kitchens : '';
+        document.getElementById('edit-floors').value = property.floors !== null ? property.floors : '';
+
+        // Populate Select fields (Đặc biệt là Hướng Nhà)
+        document.getElementById('edit-direction').value = property.direction !== "Chưa cập nhật" ? property.direction : '';
+        document.getElementById('edit-legal').value = property.legal !== "Chưa cập nhật" ? property.legal : '';
+        
+        // Populate Checkbox
+        document.getElementById('edit-loanable').checked = property.loanable;
+        
+        document.getElementById('detailsModal').style.display = 'flex';
+    }
+
+    // Hàm lưu Chi tiết Cập nhật
+    function savePropertyDetails() {
+        const propertyId = document.getElementById('edit-property-id').value;
+
+        // Lấy và chuẩn hóa dữ liệu từ form sửa
+        const name = document.getElementById('edit-name').value.trim() || "Chưa cập nhật";
+        const phone = document.getElementById('edit-phone').value.trim() || "Chưa cập nhật";
+        const address = document.getElementById('edit-address').value.trim() || "Chưa cập nhật";
+        
+        const priceValue = document.getElementById('edit-price').value.trim();
+        const price = priceValue ? parseFloat(priceValue) : null; 
+        
+        const areaValue = document.getElementById('edit-area').value.trim();
+        const area = areaValue ? parseFloat(areaValue) : null; 
+
+        const direction = document.getElementById('edit-direction').value || "Chưa cập nhật";
+        
+        const bedroomsValue = document.getElementById('edit-bedrooms').value.trim();
+        const bedrooms = bedroomsValue ? parseInt(bedroomsValue) : null;
+        
+        const wcValue = document.getElementById('edit-wc').value.trim();
+        const wc = wcValue ? parseInt(wcValue) : null;
+        
+        const kitchensValue = document.getElementById('edit-kitchens').value.trim();
+        const kitchens = kitchensValue ? parseInt(kitchensValue) : null;
+        
+        const floorsValue = document.getElementById('edit-floors').value.trim();
+        const floors = floorsValue ? parseInt(floorsValue) : null;
+
+        const legal = document.getElementById('edit-legal').value || "Chưa cập nhật";
+        const loanable = document.getElementById('edit-loanable').checked;
+
+        const updatedData = {
+            name, phone, address, price, area, direction, bedrooms, wc, kitchens, floors, legal, loanable
+        };
+
+        // Gửi dữ liệu cập nhật lên Firestore
+        propertiesRef.doc(propertyId).update(updatedData)
+            .then(() => {
+                alert('Đã cập nhật chi tiết bất động sản thành công!');
+                closeModal('detailsModal');
+            })
+            .catch(error => {
+                console.error("Lỗi khi cập nhật chi tiết Firestore: ", error);
+                alert("Lỗi khi cập nhật chi tiết. Vui lòng kiểm tra console.");
+            });
+    }
+
+
+    // =======================================================
+    // 5. LOGIC TẢI & HIỂN THỊ DỮ LIỆU (READ)
+    // =======================================================
+    
+    // Listener lắng nghe sự kiện thay đổi dữ liệu từ Firestore (Giữ nguyên)
+    propertiesRef.onSnapshot((snapshot) => {
+        properties = []; 
         snapshot.forEach(doc => {
-            // Lấy ID Document và dữ liệu
             properties.push({
                 ...doc.data(),
-                id: doc.id // ID của Firestore Document
+                id: doc.id 
             });
         });
         
-        // Sau khi tải xong dữ liệu, gọi hàm tìm kiếm/hiển thị
         searchProperties();
         console.log("Đã tải dữ liệu BĐS từ Cloud Firestore.");
     });
     
-    // Hàm mở modal và hiển thị ảnh chi tiết/cập nhật - Giữ nguyên logic, chỉ thay đổi tên biến ID
-    function openModal(propertyId) {
-        const property = properties.find(p => p.id === propertyId);
-        if (!property) return;
-
-        const modal = document.getElementById('imageModal');
-        const gallery = document.getElementById('modal-gallery');
-        const title = document.getElementById('modal-title');
-        
-        newImagesToUpload = [];
-        document.getElementById('update-image-upload').value = null;
-        document.getElementById('new-images-preview').innerHTML = ''; 
-        
-        document.getElementById('current-property-id').value = propertyId;
-        
-        title.textContent = 'Cập nhật bộ sưu tập ảnh: ' + property.name;
-        gallery.innerHTML = ''; 
-
-        if (property.images && property.images.length > 0) {
-            property.images.forEach(imgSrc => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'image-wrapper';
-                
-                const img = document.createElement('img');
-                img.src = imgSrc;
-                img.alt = property.name;
-                
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'delete-image-btn';
-                deleteBtn.textContent = 'X';
-                deleteBtn.title = 'Xóa ảnh này';
-                deleteBtn.onclick = () => deleteImage(property.id, imgSrc); 
-                
-                wrapper.appendChild(img);
-                wrapper.appendChild(deleteBtn);
-                gallery.appendChild(wrapper);
-            });
-        } else {
-            gallery.innerHTML = '<p style="text-align: center;">Hiện không có hình ảnh nào.</p>';
-        }
-
-        modal.style.display = 'flex';
-    }
-
-    // Hàm đóng modal - Giữ nguyên
-    function closeModal() {
-        document.getElementById('imageModal').style.display = 'none';
-        
-        document.getElementById('update-image-upload').value = null;
-        newImagesToUpload = []; 
-    }
-
-    // Xử lý đóng modal khi click ra ngoài - Giữ nguyên
+    // Xử lý đóng modal khi click ra ngoài
     window.onclick = function(event) {
-        const modal = document.getElementById('imageModal');
-        if (event.target === modal) {
-            closeModal();
+        const imageModal = document.getElementById('imageModal');
+        const detailsModal = document.getElementById('detailsModal');
+        if (event.target === imageModal) {
+            closeModal('imageModal');
+        }
+        if (event.target === detailsModal) {
+            closeModal('detailsModal');
         }
     }
 
 
-    // Hàm tìm kiếm và lọc chi tiết (FILTER) - Giữ nguyên logic lọc
+    // Hàm tìm kiếm và lọc chi tiết (FILTER)
     function searchProperties() {
         const filterName = document.getElementById('filter-name').value.toLowerCase();
         const filterPhone = document.getElementById('filter-phone').value.toLowerCase();
@@ -852,9 +965,7 @@
         resultsList.innerHTML = '';
 
         const filteredProperties = properties.filter(prop => {
-            // Lưu ý: Các trường số (price, area, bedrooms,...) có thể là null, 
-            // nên cần kiểm tra isNaN(prop.price) trước khi so sánh.
-
+            // Logic lọc (Giữ nguyên)
             const matchName = prop.name.toLowerCase().includes(filterName);
             const matchPhone = prop.phone.toLowerCase().includes(filterPhone);
             const matchAddress = prop.address.toLowerCase().includes(filterAddress);
@@ -895,12 +1006,11 @@
             const listItem = document.createElement('li');
             listItem.className = 'property-item';
             
-            // Hàm toLocaleString sẽ xử lý trường hợp giá trị là null
             const formattedPrice = prop.price !== null ? prop.price.toLocaleString('vi-VN', { minimumFractionDigits: 2 }) + ' tỷ VNĐ' : 'Chưa cập nhật';
             const formattedArea = prop.area !== null ? prop.area.toLocaleString('vi-VN', { minimumFractionDigits: 1 }) + ' m²' : 'Chưa cập nhật';
 
             // Tạo chuỗi HTML cho nhiều hình ảnh (có thể click)
-            let imagesHtml = `<div class="property-images" onclick="openModal('${prop.id}')">`; 
+            let imagesHtml = `<div class="property-images" onclick="openImageModal('${prop.id}')">`; 
             if (prop.images && prop.images.length > 0) {
                 const imagesToShow = prop.images.slice(0, 3);    
                 imagesToShow.forEach(imgSrc => {
@@ -911,9 +1021,11 @@
             }
             imagesHtml += '</div>';
 
+            // THÊM NÚT SỬA CHI TIẾT (MỚI)
             const actionsHtml = `
                 <div class="property-actions">
-                    <button class="update-img-btn" onclick="openModal('${prop.id}')">🖼️ Ảnh</button>
+                    <button class="edit-details-btn" onclick="openDetailsModal('${prop.id}')">✏️ Sửa TT</button>
+                    <button class="update-img-btn" onclick="openImageModal('${prop.id}')">🖼️ Ảnh</button>
                     <button class="delete-btn" onclick="deleteProperty('${prop.id}')">🗑️ Xóa</button>
                 </div>
             `;
@@ -944,5 +1056,3 @@
 </script>
 </body>
 </html>
-
-
