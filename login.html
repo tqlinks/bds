@@ -35,6 +35,9 @@
             <input type="password" id="password" required placeholder="Mật khẩu Admin">
         </div>
         <button type="submit">Đăng Nhập</button>
+        <button type="button" onclick="loginWithGoogle()" style="margin-top: 15px; background-color: #db4437;">
+    G Đăng Nhập bằng Google
+</button>
         <p id="error-message"></p>
     </form>
     <p style="margin-top: 20px; font-size: 0.9em; color: #6c757d;">
@@ -94,7 +97,34 @@
                 errorMessage.textContent = msg;
             });
     });
+    // Thêm đoạn code này vào phần <script> trong login.html, cùng chỗ với các hàm Firebase Auth khác.
 
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+function loginWithGoogle() {
+    // Ẩn thông báo lỗi trước khi đăng nhập
+    errorMessage.textContent = ''; 
+
+    auth.signInWithPopup(googleProvider)
+        .then((result) => {
+            // Đăng nhập Google thành công
+            const user = result.user;
+            
+            // Chuyển hướng đến trang quản lý (input.html)
+            window.location.href = 'input.html';
+        })
+        .catch((error) => {
+            console.error("Lỗi Đăng Nhập Google:", error.code, error.message);
+            
+            let msg = "Đăng nhập Google thất bại.";
+            if (error.code === 'auth/popup-closed-by-user') {
+                 msg = "Đăng nhập bị hủy bởi người dùng.";
+            } else if (error.code === 'auth/cancelled-popup-request') {
+                 msg = "Đã có một yêu cầu đăng nhập khác đang diễn ra.";
+            }
+            errorMessage.textContent = msg;
+        });
+}
 </script>
 
 </body>
