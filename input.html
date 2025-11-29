@@ -7,7 +7,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script> 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <style>
         /* GIỮ NGUYÊN CSS TỪ CODE CŨ CỦA BẠN (HOẶC CHỈ CẦN CHỌN LỌC) */
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; color: #333; }
@@ -27,7 +27,9 @@
     </style>
 </head>
 <body>
-
+<a href="#" onclick="logout()" style="float: right; text-decoration: none; background-color: #dc3545; color: white; padding: 10px 15px; border-radius: 4px; margin-left: 10px;">
+    Đăng Xuất
+</a>
 <div class="container">
     <div class="column">
         <a href="search.html" style="float: right; text-decoration: none; background-color: #007bff; color: white; padding: 10px 15px; border-radius: 4px;">
@@ -131,6 +133,30 @@
 </div>
 
 <script>
+    
+        function logout() {
+            auth.signOut().then(() => {
+            alert("Đã đăng xuất thành công.");
+            window.location.href = 'login.html';
+            }).catch(error => {
+            console.error("Lỗi đăng xuất:", error);
+    });
+        }
+
+    // Thêm đoạn này vào đầu thẻ <script> của input.html
+        const auth = firebase.auth();
+
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+        // Nếu không có người dùng đăng nhập, chuyển hướng về trang login
+        alert("Bạn cần đăng nhập với quyền Admin để thực hiện chức năng này.");
+        window.location.href = 'login.html'; 
+            } else {
+        // (Tùy chọn) Hiện nút Đăng xuất
+        // Ví dụ: 
+        // document.getElementById('logout-btn').style.display = 'block';
+    }
+});
     // GIỮ NGUYÊN TOÀN BỘ PHẦN KHỞI TẠO FIREBASE, CLOUDINARY CONFIG, VÀ HÀM LIÊN QUAN ĐẾN TẠO MỚI (CREATE)
     // Tức là toàn bộ script từ dòng 419 đến hết hàm propertyFormSubmit(e)
     
